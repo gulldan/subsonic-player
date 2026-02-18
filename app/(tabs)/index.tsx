@@ -1,11 +1,132 @@
-// template
-import { StyleSheet, Text, View } from "react-native";
+import { View, Text, ScrollView, FlatList, StyleSheet, Platform } from 'react-native';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { usePlayer } from '@/lib/contexts/PlayerContext';
+import { useI18n } from '@/lib/i18n';
+import { SectionHeader, AlbumCard, Shimmer } from '@/components/ui';
+import Colors from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { useFonts, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { router } from 'expo-router';
+import type { Album } from '@/lib/api/types';
 
-export default function TabOneScreen() {
+const p = Colors.palette;
+
+function ShimmerRow() {
+  return (
+    <View style={styles.shimmerRow}>
+      {[1, 2, 3].map((i) => (
+        <Shimmer key={i} width={160} height={160} borderRadius={12} style={{ marginRight: 12 }} />
+      ))}
+    </View>
+  );
+}
+
+export default function HomeScreen() {
+  const { client } = useAuth();
+  const { t } = useI18n();
+  const { playTrack } = usePlayer();
+  const insets = useSafeAreaInsets();
+  const [fontsLoaded] = useFonts({ Inter_600SemiBold, Inter_700Bold });
+
+  const { data: randomData, isLoading: randomLoading } = useQuery({
+    queryKey: ['albumList', 'random'],
+    queryFn: () => client!.getAlbumList2('random', 10),
+    enabled: !!client,
+  });
+
+  const { data: newestData, isLoading: newestLoading } = useQuery({
+    queryKey: ['albumList', 'newest'],
+    queryFn: () => client!.getAlbumList2('newest', 10),
+    enabled: !!client,
+  });
+
+  const { data: frequentData, isLoading: frequentLoading } = useQuery({
+    queryKey: ['albumList', 'frequent'],
+    queryFn: () => client!.getAlbumList2('frequent', 10),
+    enabled: !!client,
+  });
+
+  if (!client) return null;
+
+  const randomAlbums = randomData?.albumList2?.album ?? [];
+  const newestAlbums = newestData?.albumList2?.album ?? [];
+  const frequentAlbums = frequentData?.albumList2?.album ?? [];
+
+  const handleAlbumPress = (album: Album) => {
+    router.push(`/album/${album.id}`);
+  };
+
+  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+
+  const renderAlbumItem = ({ item }: { item: Album }) => (
+    <View style={{ marginRight: 12 }}>
+      <AlbumCard album={item} onPress={handleAlbumPress} size={160} />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Your Replit app will be here</Text>
-      <Text style={styles.text}>Please wait until we finish building it</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding + 16, paddingBottom: 100 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.greeting}>SonicWave</Text>
+
+        <View style={styles.section}>
+          <SectionHeader title={t('home.randomPicks')} />
+          {randomLoading ? (
+            <ShimmerRow />
+          ) : (
+            <FlatList
+              data={randomAlbums}
+              renderItem={renderAlbumItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              scrollEnabled={randomAlbums.length > 0}
+            />
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title={t('home.newAdditions')} />
+          {newestLoading ? (
+            <ShimmerRow />
+          ) : (
+            <FlatList
+              data={newestAlbums}
+              renderItem={renderAlbumItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              scrollEnabled={newestAlbums.length > 0}
+            />
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title={t('home.frequentlyPlayed')} />
+          {frequentLoading ? (
+            <ShimmerRow />
+          ) : (
+            <FlatList
+              data={frequentAlbums}
+              renderItem={renderAlbumItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              scrollEnabled={frequentAlbums.length > 0}
+            />
+          )}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -13,17 +134,26 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    backgroundColor: p.black,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
+  scrollContent: {
+    flexGrow: 1,
   },
-  text: {
-    fontSize: 16,
-    textAlign: "center",
+  greeting: {
+    fontSize: 28,
+    fontFamily: 'Inter_700Bold',
+    color: p.white,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  section: {
+    marginBottom: 28,
+  },
+  horizontalList: {
+    paddingHorizontal: 20,
+  },
+  shimmerRow: {
+    flexDirection: 'row',
     paddingHorizontal: 20,
   },
 });
