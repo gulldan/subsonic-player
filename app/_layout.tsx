@@ -1,19 +1,25 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { PlayerProvider } from "@/lib/contexts/PlayerContext";
 import { I18nProvider } from "@/lib/i18n";
+import { MiniPlayer } from "@/components/ui";
 import { StatusBar } from "expo-status-bar";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
+  const insets = useSafeAreaInsets();
+  const miniPlayerBottom = Platform.OS === 'web' ? 90 : (insets.bottom + 54);
+
   return (
     <>
       <StatusBar style="light" />
@@ -30,6 +36,10 @@ function RootLayoutNav() {
         <Stack.Screen name="genres" options={{ headerShown: false }} />
         <Stack.Screen name="starred" options={{ headerShown: false }} />
       </Stack>
+      <MiniPlayer
+        onPress={() => router.push('/player')}
+        bottomOffset={miniPlayerBottom}
+      />
     </>
   );
 }

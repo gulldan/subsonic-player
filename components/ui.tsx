@@ -10,7 +10,8 @@ import Animated, {
   withSequence,
   SlideInDown,
 } from 'react-native-reanimated';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { usePlayer } from '@/lib/contexts/PlayerContext';
 import Colors from '@/constants/colors';
@@ -193,10 +194,19 @@ export function SectionHeader({
   );
 }
 
-export function MiniPlayer({ onPress }: { onPress: () => void }) {
-  const { currentTrack, isPlaying, pause, resume, next } = usePlayer();
+export function MiniPlayer({ onPress, bottomOffset }: { onPress: () => void; bottomOffset: number }) {
+  const { currentTrack, isPlaying, pause, resume, next, position, duration } = usePlayer();
+  const { client } = useAuth();
+  const queryClient = useQueryClient();
+  const [isStarred, setIsStarred] = useState(!!currentTrack?.starred);
+
+  useEffect(() => {
+    setIsStarred(!!currentTrack?.starred);
+  }, [currentTrack?.id]);
 
   if (!currentTrack) return null;
+
+  const progress = duration > 0 ? position / duration : 0;
 
   const handlePlayPause = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -212,31 +222,45 @@ export function MiniPlayer({ onPress }: { onPress: () => void }) {
     await next();
   };
 
+  const handleStar = async () => {
+    if (!client || !currentTrack) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (isStarred) {
+        await client.unstar(currentTrack.id);
+        setIsStarred(false);
+      } else {
+        await client.star(currentTrack.id);
+        setIsStarred(true);
+      }
+      queryClient.invalidateQueries({ queryKey: ['starred'] });
+    } catch {}
+  };
+
   return (
-    <Animated.View entering={SlideInDown.duration(300)} style={styles.miniPlayer}>
-      <Pressable
-        onPress={onPress}
-        style={styles.miniPlayerContent}
-      >
-        <CoverArt coverArtId={currentTrack.coverArt} size={44} borderRadius={6} />
+    <Animated.View entering={SlideInDown.duration(300)} style={[styles.miniPlayer, { bottom: bottomOffset }]}>
+      <View style={styles.miniProgressBar}>
+        <View style={[styles.miniProgressFill, { width: `${progress * 100}%` }]} />
+      </View>
+
+      <Pressable onPress={onPress} style={styles.miniPlayerContent}>
+        <CoverArt coverArtId={currentTrack.coverArt} size={48} borderRadius={8} />
         <View style={styles.miniPlayerInfo}>
-          <Text style={styles.miniPlayerTitle} numberOfLines={1}>
-            {currentTrack.title}
-          </Text>
-          <Text style={styles.miniPlayerArtist} numberOfLines={1}>
-            {currentTrack.artist ?? ''}
-          </Text>
+          <Text style={styles.miniPlayerTitle} numberOfLines={1}>{currentTrack.title}</Text>
+          <Text style={styles.miniPlayerArtist} numberOfLines={1}>{currentTrack.artist ?? ''}</Text>
         </View>
       </Pressable>
-      <Pressable onPress={handlePlayPause} style={styles.miniPlayerBtn}>
-        <Ionicons
-          name={isPlaying ? 'pause' : 'play'}
-          size={24}
-          color={p.textPrimary}
-        />
+
+      <Pressable onPress={handleStar} style={styles.miniPlayerBtn}>
+        <Ionicons name={isStarred ? 'heart' : 'heart-outline'} size={22} color={isStarred ? p.accent : p.textSecondary} />
       </Pressable>
+
+      <Pressable onPress={handlePlayPause} style={styles.miniPlayPauseBtn}>
+        <Ionicons name={isPlaying ? 'pause' : 'play'} size={28} color={p.white} />
+      </Pressable>
+
       <Pressable onPress={handleNext} style={styles.miniPlayerBtn}>
-        <Ionicons name="play-forward" size={20} color={p.textPrimary} />
+        <Ionicons name="play-forward" size={20} color={p.textSecondary} />
       </Pressable>
     </Animated.View>
   );
@@ -382,16 +406,38 @@ const styles = StyleSheet.create({
   },
   miniPlayer: {
     position: 'absolute' as const,
-    left: 0,
-    right: 0,
-    bottom: Platform.OS === 'web' ? 84 : 49,
+    left: 8,
+    right: 8,
     height: 64,
-    backgroundColor: p.surface,
-    borderTopWidth: 1,
-    borderColor: p.border,
+    backgroundColor: '#1C1C20',
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
+    paddingRight: 4,
+    overflow: 'hidden',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 -2px 20px rgba(0,0,0,0.5)',
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 16,
+    }),
+  } as any,
+  miniProgressBar: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  miniProgressFill: {
+    height: 2,
+    backgroundColor: p.accent,
+    borderRadius: 1,
   },
   miniPlayerContent: {
     flex: 1,
@@ -406,7 +452,7 @@ const styles = StyleSheet.create({
   miniPlayerTitle: {
     color: p.textPrimary,
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_600SemiBold',
   },
   miniPlayerArtist: {
     color: p.textSecondary,
@@ -414,6 +460,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
   },
   miniPlayerBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniPlayPauseBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
