@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -381,6 +381,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
   miniPlayer: {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    bottom: Platform.OS === 'web' ? 84 : 49,
     height: 64,
     backgroundColor: p.surface,
     borderTopWidth: 1,

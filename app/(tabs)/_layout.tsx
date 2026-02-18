@@ -1,38 +1,43 @@
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/colors";
+import { MiniPlayer } from "@/components/ui";
 
 const p = Colors.palette;
 
 function NativeTabLayout() {
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="search" role="search">
-        <Icon sf={{ default: "magnifyingglass" }} />
-        <Label>Search</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="library">
-        <Icon sf={{ default: "square.stack", selected: "square.stack.fill" }} />
-        <Label>Library</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
-        <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>Settings</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={{ flex: 1 }}>
+      <NativeTabs>
+        <NativeTabs.Trigger name="index">
+          <Icon sf={{ default: "house", selected: "house.fill" }} />
+          <Label>Home</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="search" role="search">
+          <Icon sf={{ default: "magnifyingglass" }} />
+          <Label>Search</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="library">
+          <Icon sf={{ default: "square.stack", selected: "square.stack.fill" }} />
+          <Label>Library</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+          <Label>Settings</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+      <MiniPlayer onPress={() => router.push('/player')} />
+    </View>
   );
 }
 
 function ClassicTabLayout() {
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -104,6 +109,8 @@ function ClassicTabLayout() {
         }}
       />
     </Tabs>
+    <MiniPlayer onPress={() => router.push('/player')} />
+    </View>
   );
 }
 
