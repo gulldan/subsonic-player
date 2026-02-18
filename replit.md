@@ -66,7 +66,7 @@ Preferred communication style: Simple, everyday language.
 ### Key NPM Packages
 - **expo** (~54.0.27) — Core framework
 - **expo-router** (~6.0.17) — File-based routing
-- **expo-av** (^16.0.8) — Audio playback engine
+- **expo-av** (^16.0.8) — Audio playback engine (native), HTMLAudioElement used on web
 - **expo-secure-store** (^15.0.8) — Secure credential storage
 - **lib/api/md5.ts** — Pure JS MD5 implementation for Subsonic auth tokens (avoids SubtleCrypto incompatibility on web)
 - **@tanstack/react-query** (^5.83.0) — Server state management
