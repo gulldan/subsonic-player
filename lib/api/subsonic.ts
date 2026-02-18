@@ -1,4 +1,5 @@
-import * as Crypto from 'expo-crypto';
+import { md5 } from './md5';
+import { getApiUrl } from '@/lib/query-client';
 import type {
   ServerConfig,
   SubsonicResponse,
@@ -25,9 +26,15 @@ export class SubsonicClient {
   private salt: string = '';
   private token: string = '';
   private authReady: Promise<void>;
+  private proxyBaseUrl: string = '';
 
   constructor(config: ServerConfig) {
     this.config = config;
+    try {
+      this.proxyBaseUrl = getApiUrl();
+    } catch {
+      this.proxyBaseUrl = '';
+    }
     if (config.salt && config.token) {
       this.salt = config.salt;
       this.token = config.token;
@@ -39,47 +46,62 @@ export class SubsonicClient {
 
   private async generateAuth(): Promise<void> {
     this.salt = Math.random().toString(36).substring(2, 12);
-    this.token = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.MD5,
-      this.config.password + this.salt,
-    );
+    this.token = md5(this.config.password + this.salt);
   }
 
-  getSalt(): string {
-    return this.salt;
+  private getServerUrl(): string {
+    return this.config.url.replace(/\/+$/, '');
   }
 
-  getToken(): string {
-    return this.token;
+  private buildAuthParams(): Record<string, string> {
+    return {
+      u: this.config.username,
+      t: this.token,
+      s: this.salt,
+      v: API_VERSION,
+      c: CLIENT_NAME,
+      f: 'json',
+    };
   }
 
-  private getBaseUrl(): string {
-    const url = this.config.url.replace(/\/+$/, '');
-    return url;
-  }
-
-  private buildUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
-    const base = `${this.getBaseUrl()}/rest/${endpoint}`;
+  private buildProxyUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
+    const base = `${this.proxyBaseUrl}api/subsonic/${endpoint}`;
     const searchParams = new URLSearchParams();
-    searchParams.set('u', this.config.username);
-    searchParams.set('t', this.token);
-    searchParams.set('s', this.salt);
-    searchParams.set('v', API_VERSION);
-    searchParams.set('c', CLIENT_NAME);
-    searchParams.set('f', 'json');
-
+    searchParams.set('serverUrl', this.getServerUrl());
+    const authParams = this.buildAuthParams();
+    for (const [key, value] of Object.entries(authParams)) {
+      searchParams.set(key, value);
+    }
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null) {
         searchParams.set(key, String(value));
       }
     }
+    return `${base}?${searchParams.toString()}`;
+  }
 
+  private buildDirectUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
+    const base = `${this.getServerUrl()}/rest/${endpoint}`;
+    const searchParams = new URLSearchParams();
+    const authParams = this.buildAuthParams();
+    for (const [key, value] of Object.entries(authParams)) {
+      searchParams.set(key, value);
+    }
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, String(value));
+      }
+    }
     return `${base}?${searchParams.toString()}`;
   }
 
   private async request<T>(endpoint: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
     await this.authReady;
-    const url = this.buildUrl(endpoint, params);
+
+    const url = this.proxyBaseUrl
+      ? this.buildProxyUrl(endpoint, params)
+      : this.buildDirectUrl(endpoint, params);
+
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -149,21 +171,18 @@ export class SubsonicClient {
   }
 
   async createPlaylist(name: string, songIds: string[]): Promise<PlaylistResponse> {
-    const params: Record<string, string | number | undefined> = { name };
     await this.authReady;
-    const base = `${this.getBaseUrl()}/rest/createPlaylist`;
     const searchParams = new URLSearchParams();
-    searchParams.set('u', this.config.username);
-    searchParams.set('t', this.token);
-    searchParams.set('s', this.salt);
-    searchParams.set('v', API_VERSION);
-    searchParams.set('c', CLIENT_NAME);
-    searchParams.set('f', 'json');
+    searchParams.set('serverUrl', this.getServerUrl());
+    const authParams = this.buildAuthParams();
+    for (const [key, value] of Object.entries(authParams)) {
+      searchParams.set(key, value);
+    }
     searchParams.set('name', name);
     for (const songId of songIds) {
       searchParams.append('songId', songId);
     }
-    const url = `${base}?${searchParams.toString()}`;
+    const url = `${this.proxyBaseUrl}api/subsonic/createPlaylist?${searchParams.toString()}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -206,11 +225,17 @@ export class SubsonicClient {
     if (size !== undefined) {
       params.size = size;
     }
-    return this.buildUrl('getCoverArt', params);
+    if (this.proxyBaseUrl) {
+      return this.buildProxyUrl('getCoverArt', params);
+    }
+    return this.buildDirectUrl('getCoverArt', params);
   }
 
   getStreamUrl(id: string): string {
-    return this.buildUrl('stream', { id });
+    if (this.proxyBaseUrl) {
+      return this.buildProxyUrl('stream', { id });
+    }
+    return this.buildDirectUrl('stream', { id });
   }
 
   async getArtistInfo2(id: string): Promise<ArtistInfoResponse> {

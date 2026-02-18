@@ -1,7 +1,32 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { SubsonicClient } from '@/lib/api/subsonic';
 import type { ServerConfig } from '@/lib/api/types';
+
+async function secureSet(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
+async function secureGet(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return AsyncStorage.getItem(key);
+  }
+  return SecureStore.getItemAsync(key);
+}
+
+async function secureDelete(key: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.removeItem(key);
+  } else {
+    await SecureStore.deleteItemAsync(key);
+  }
+}
 
 interface AuthContextValue {
   serverConfig: ServerConfig | null;
@@ -30,9 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const [url, username, password] = await Promise.all([
-          SecureStore.getItemAsync(STORE_KEYS.url),
-          SecureStore.getItemAsync(STORE_KEYS.username),
-          SecureStore.getItemAsync(STORE_KEYS.password),
+          secureGet(STORE_KEYS.url),
+          secureGet(STORE_KEYS.username),
+          secureGet(STORE_KEYS.password),
         ]);
 
         if (url && username && password) {
@@ -64,18 +89,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      await Promise.all([
-        SecureStore.setItemAsync(STORE_KEYS.url, url),
-        SecureStore.setItemAsync(STORE_KEYS.username, username),
-        SecureStore.setItemAsync(STORE_KEYS.password, password),
-      ]);
+      try {
+        await Promise.all([
+          secureSet(STORE_KEYS.url, url),
+          secureSet(STORE_KEYS.username, username),
+          secureSet(STORE_KEYS.password, password),
+        ]);
+      } catch (storeErr: any) {
+        console.warn('AuthContext: SecureStore save failed (non-fatal):', storeErr?.message);
+      }
 
       clientRef.current = newClient;
       setServerConfig(config);
       setIsConnected(true);
       setIsLoading(false);
       return true;
-    } catch {
+    } catch (err: any) {
+      console.error('AuthContext: connect error:', err?.message);
       setIsLoading(false);
       return false;
     }
@@ -83,9 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(async () => {
     await Promise.all([
-      SecureStore.deleteItemAsync(STORE_KEYS.url),
-      SecureStore.deleteItemAsync(STORE_KEYS.username),
-      SecureStore.deleteItemAsync(STORE_KEYS.password),
+      secureDelete(STORE_KEYS.url),
+      secureDelete(STORE_KEYS.username),
+      secureDelete(STORE_KEYS.password),
     ]);
     clientRef.current = null;
     setServerConfig(null);
