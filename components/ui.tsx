@@ -43,6 +43,12 @@ export function CoverArt({
 }) {
   const { client } = useAuth();
   const [hasError, setHasError] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset error state when coverArtId prop changes
+  useEffect(() => {
+    setHasError(false);
+  }, [coverArtId]);
+
   const requestSize = Math.ceil(size * PixelRatio.get());
   const url = coverArtId && client ? client.getCoverArtUrl(coverArtId, requestSize) : null;
 
@@ -60,7 +66,7 @@ export function CoverArt({
       style={{ width: size, height: size, borderRadius }}
       contentFit="cover"
       transition={200}
-      cachePolicy="disk"
+      cachePolicy="memory-disk"
       onError={() => setHasError(true)}
     />
   );
