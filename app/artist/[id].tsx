@@ -1,15 +1,21 @@
-import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { useQuery } from '@tanstack/react-query';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AlbumCard, CoverArt, SectionHeader, TrackItem } from '@/components/ui';
+import Colors from '@/constants/colors';
+import type { Album, Song } from '@/lib/api/types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { usePlayer } from '@/lib/contexts/PlayerContext';
 import { useI18n } from '@/lib/i18n';
-import { CoverArt, AlbumCard, TrackItem, SectionHeader } from '@/components/ui';
-import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, ScrollView, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { Album, Song } from '@/lib/api/types';
 
 const p = Colors.palette;
 
@@ -55,9 +61,7 @@ export default function ArtistDetailScreen() {
       }
     }
   }
-  const topSongs = topSongsData?.topSongs?.song?.length
-    ? topSongsData.topSongs.song
-    : fallbackTopSongs;
+  const topSongs = topSongsData?.topSongs?.song?.length ? topSongsData.topSongs.song : fallbackTopSongs;
 
   const handleAlbumPress = (album: Album) => {
     router.push(`/album/${album.id}`);
@@ -71,10 +75,7 @@ export default function ArtistDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Pressable
-        onPress={() => router.back()}
-        style={[styles.backBtn, { top: topPadding + 8 }]}
-      >
+      <Pressable onPress={() => router.back()} style={[styles.backBtn, { top: topPadding + 8 }]}>
         <Ionicons name="chevron-back" size={28} color={p.white} />
       </Pressable>
 
@@ -97,7 +98,9 @@ export default function ArtistDetailScreen() {
           </Text>
 
           {bio ? (
-            <Text style={styles.bioText} numberOfLines={4}>{bio.replace(/<[^>]*>/g, '')}</Text>
+            <Text style={styles.bioText} numberOfLines={4}>
+              {bio.replace(/<[^>]*>/g, '')}
+            </Text>
           ) : null}
 
           {albums.length > 0 ? (
@@ -108,10 +111,8 @@ export default function ArtistDetailScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => (
-                  <AlbumCard album={item} onPress={handleAlbumPress} size={150} />
-                )}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => <AlbumCard album={item} onPress={handleAlbumPress} size={150} />}
               />
             </View>
           ) : null}

@@ -1,10 +1,10 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
-import Colors from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 const p = Colors.palette;
 
@@ -28,23 +28,16 @@ export default function SettingsScreen() {
   const currentLanguageName = availableLocales.find((l) => l.code === locale)?.nativeName ?? locale;
 
   const handleDisconnect = () => {
-    Alert.alert(
-      t('auth.logout'),
-      '',
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('auth.logout'), style: 'destructive', onPress: () => disconnect() },
-      ],
-    );
+    Alert.alert(t('auth.logout'), '', [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('auth.logout'), style: 'destructive', onPress: () => disconnect() },
+    ]);
   };
 
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPadding + 16, paddingBottom: 100 },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageTitle}>{t('tabs.settings')}</Text>
@@ -71,10 +64,7 @@ export default function SettingsScreen() {
             </View>
           </View>
           <View style={styles.divider} />
-          <Pressable
-            onPress={handleDisconnect}
-            style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
-          >
+          <Pressable onPress={handleDisconnect} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
             <Ionicons name="log-out-outline" size={20} color={p.danger} />
             <Text style={styles.dangerLabel}>{t('auth.logout')}</Text>
           </Pressable>
@@ -82,10 +72,7 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
         <View style={styles.card}>
-          <Pressable
-            onPress={handleCycleLanguage}
-            style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
-          >
+          <Pressable onPress={handleCycleLanguage} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}>
             <Ionicons name="language-outline" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('settings.language')}</Text>
             <Text style={styles.rowValue}>{currentLanguageName}</Text>

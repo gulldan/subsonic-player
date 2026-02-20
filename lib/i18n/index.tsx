@@ -1,10 +1,19 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, createElement, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform, NativeModules } from 'react-native';
+import {
+  createContext,
+  createElement,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { NativeModules, Platform } from 'react-native';
+import type { Translations } from './locales/en';
 import en from './locales/en';
 import ja from './locales/ja';
 import ru from './locales/ru';
-import type { Translations } from './locales/en';
 
 const LOCALE_STORAGE_KEY = 'sonicwave_locale';
 
@@ -65,14 +74,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(LOCALE_STORAGE_KEY).then((stored) => {
-      if (stored && (stored === 'en' || stored === 'ja' || stored === 'ru')) {
-        setLocaleState(stored as Locale);
-      }
-      setIsLoaded(true);
-    }).catch(() => {
-      setIsLoaded(true);
-    });
+    AsyncStorage.getItem(LOCALE_STORAGE_KEY)
+      .then((stored) => {
+        if (stored && (stored === 'en' || stored === 'ja' || stored === 'ru')) {
+          setLocaleState(stored as Locale);
+        }
+        setIsLoaded(true);
+      })
+      .catch(() => {
+        setIsLoaded(true);
+      });
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
@@ -80,16 +91,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(LOCALE_STORAGE_KEY, newLocale).catch(() => {});
   }, []);
 
-  const t = useCallback((key: string): string => {
-    return getNestedValue(translations[locale] as unknown as Record<string, any>, key);
-  }, [locale]);
+  const t = useCallback(
+    (key: string): string => {
+      return getNestedValue(translations[locale] as unknown as Record<string, any>, key);
+    },
+    [locale],
+  );
 
-  const value = useMemo(() => ({
-    t,
-    locale,
-    setLocale,
-    availableLocales,
-  }), [t, locale, setLocale]);
+  const value = useMemo(
+    () => ({
+      t,
+      locale,
+      setLocale,
+      availableLocales,
+    }),
+    [t, locale, setLocale],
+  );
 
   if (!isLoaded) return null;
 

@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { SubsonicClient } from '@/lib/api/subsonic';
 import type { ServerConfig } from '@/lib/api/types';
 
@@ -139,20 +139,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsConnected(false);
   }, []);
 
-  const value = useMemo(() => ({
-    serverConfig,
-    isConnected,
-    isLoading,
-    client: clientRef.current,
-    connect,
-    disconnect,
-  }), [serverConfig, isConnected, isLoading, connect, disconnect]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      serverConfig,
+      isConnected,
+      isLoading,
+      client: clientRef.current,
+      connect,
+      disconnect,
+    }),
+    [serverConfig, isConnected, isLoading, connect, disconnect],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

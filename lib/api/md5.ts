@@ -130,8 +130,9 @@ function rstrMD5(s: string): string {
   let hex = '';
   const hexChars = '0123456789abcdef';
   for (let i = 0; i < output.length * 4; i++) {
-    hex += hexChars.charAt((output[i >> 2] >> ((i % 4) * 8 + 4)) & 0x0f) +
-           hexChars.charAt((output[i >> 2] >> ((i % 4) * 8)) & 0x0f);
+    hex +=
+      hexChars.charAt((output[i >> 2] >> ((i % 4) * 8 + 4)) & 0x0f) +
+      hexChars.charAt((output[i >> 2] >> ((i % 4) * 8)) & 0x0f);
   }
   return hex;
 }

@@ -1,15 +1,30 @@
-import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { router, Stack } from 'expo-router';
-import { usePlayer } from '@/lib/contexts/PlayerContext';
-import { useAuth } from '@/lib/contexts/AuthContext';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type LayoutChangeEvent,
+  PanResponder,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CoverArt, formatDuration } from '@/components/ui';
 import Colors from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, Pressable, StyleSheet, Platform, PanResponder, useWindowDimensions, LayoutChangeEvent } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { usePlayer } from '@/lib/contexts/PlayerContext';
 
 const p = Colors.palette;
 
@@ -30,7 +45,7 @@ export default function PlayerScreen() {
 
   useEffect(() => {
     setIsStarred(!!player.currentTrack?.starred);
-  }, [player.currentTrack?.id, player.currentTrack?.starred]);
+  }, [player.currentTrack?.starred]);
 
   const refreshSliderMetrics = useCallback(() => {
     sliderRef.current?.measureInWindow((x, _y, measuredWidth) => {
@@ -41,49 +56,56 @@ export default function PlayerScreen() {
     });
   }, []);
 
-  const onSliderLayout = useCallback((e: LayoutChangeEvent) => {
-    sliderMetrics.current.width = e.nativeEvent.layout.width;
-    requestAnimationFrame(() => refreshSliderMetrics());
-  }, [refreshSliderMetrics]);
+  const onSliderLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      sliderMetrics.current.width = e.nativeEvent.layout.width;
+      requestAnimationFrame(() => refreshSliderMetrics());
+    },
+    [refreshSliderMetrics],
+  );
 
   useEffect(() => {
     sliderMetrics.current.width = width - 64;
     requestAnimationFrame(() => refreshSliderMetrics());
   }, [width, refreshSliderMetrics]);
 
-  const getSeekPositionFromPageX = useCallback((pageX: number) => {
-    if (player.duration <= 0) return 0;
-    const { x, width: measuredWidth } = sliderMetrics.current;
-    if (measuredWidth <= 0) return 0;
-    const localX = pageX - x;
-    const ratio = Math.max(0, Math.min(1, localX / measuredWidth));
-    return ratio * player.duration;
-  }, [player.duration]);
+  const getSeekPositionFromPageX = useCallback(
+    (pageX: number) => {
+      if (player.duration <= 0) return 0;
+      const { x, width: measuredWidth } = sliderMetrics.current;
+      if (measuredWidth <= 0) return 0;
+      const localX = pageX - x;
+      const ratio = Math.max(0, Math.min(1, localX / measuredWidth));
+      return ratio * player.duration;
+    },
+    [player.duration],
+  );
 
-  const panResponder = useMemo(() =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => {
-        refreshSliderMetrics();
-        setIsSeeking(true);
-        setSeekPosition(getSeekPositionFromPageX(e.nativeEvent.pageX));
-      },
-      onPanResponderMove: (e) => {
-        setSeekPosition(getSeekPositionFromPageX(e.nativeEvent.pageX));
-      },
-      onPanResponderRelease: (e) => {
-        const finalPos = getSeekPositionFromPageX(e.nativeEvent.pageX);
-        setSeekPosition(finalPos);
-        seekTo(finalPos);
-        setIsSeeking(false);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      },
-      onPanResponderTerminate: () => {
-        setIsSeeking(false);
-      },
-    }),
-    [getSeekPositionFromPageX, refreshSliderMetrics, seekTo]
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (e) => {
+          refreshSliderMetrics();
+          setIsSeeking(true);
+          setSeekPosition(getSeekPositionFromPageX(e.nativeEvent.pageX));
+        },
+        onPanResponderMove: (e) => {
+          setSeekPosition(getSeekPositionFromPageX(e.nativeEvent.pageX));
+        },
+        onPanResponderRelease: (e) => {
+          const finalPos = getSeekPositionFromPageX(e.nativeEvent.pageX);
+          setSeekPosition(finalPos);
+          seekTo(finalPos);
+          setIsSeeking(false);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+        onPanResponderTerminate: () => {
+          setIsSeeking(false);
+        },
+      }),
+    [getSeekPositionFromPageX, refreshSliderMetrics, seekTo],
   );
 
   if (!fontsLoaded) return null;
@@ -178,23 +200,22 @@ export default function PlayerScreen() {
       </View>
 
       <View style={styles.trackInfoSection}>
-        <Text style={styles.trackTitle} numberOfLines={1}>{track.title}</Text>
-        <Text style={styles.trackArtist} numberOfLines={1}>{track.artist ?? ''}</Text>
-        <Text style={styles.trackAlbum} numberOfLines={1}>{track.album ?? ''}</Text>
+        <Text style={styles.trackTitle} numberOfLines={1}>
+          {track.title}
+        </Text>
+        <Text style={styles.trackArtist} numberOfLines={1}>
+          {track.artist ?? ''}
+        </Text>
+        <Text style={styles.trackAlbum} numberOfLines={1}>
+          {track.album ?? ''}
+        </Text>
       </View>
 
       <View style={styles.progressSection}>
-        <View
-          ref={sliderRef}
-          onLayout={onSliderLayout}
-          style={styles.sliderTouchArea}
-          {...panResponder.panHandlers}
-        >
+        <View ref={sliderRef} onLayout={onSliderLayout} style={styles.sliderTouchArea} {...panResponder.panHandlers}>
           <View style={styles.sliderTrack}>
             <View style={[styles.sliderProgress, { width: `${progress * 100}%` }]} />
-            {isSeeking ? (
-              <View style={[styles.sliderThumb, { left: `${progress * 100}%` }]} />
-            ) : null}
+            {isSeeking ? <View style={[styles.sliderThumb, { left: `${progress * 100}%` }]} /> : null}
           </View>
         </View>
         <View style={styles.timeRow}>
@@ -211,22 +232,14 @@ export default function PlayerScreen() {
           <Ionicons name="play-skip-back" size={28} color={p.white} />
         </Pressable>
         <Pressable onPress={handlePlayPause} style={styles.playPauseBtn}>
-          <Ionicons
-            name={player.isPlaying ? 'pause-circle' : 'play-circle'}
-            size={64}
-            color={p.accent}
-          />
+          <Ionicons name={player.isPlaying ? 'pause-circle' : 'play-circle'} size={64} color={p.accent} />
         </Pressable>
         <Pressable onPress={handleNext} style={styles.controlBtn}>
           <Ionicons name="play-skip-forward" size={28} color={p.white} />
         </Pressable>
         <Pressable onPress={handleRepeat} style={styles.controlBtn}>
           <View>
-            <Ionicons
-              name="repeat"
-              size={24}
-              color={player.repeatMode !== 'off' ? p.accent : p.textTertiary}
-            />
+            <Ionicons name="repeat" size={24} color={player.repeatMode !== 'off' ? p.accent : p.textTertiary} />
             {player.repeatMode === 'one' ? (
               <View style={styles.repeatOneBadge}>
                 <Text style={styles.repeatOneText}>1</Text>
@@ -245,11 +258,7 @@ export default function PlayerScreen() {
           />
         </Pressable>
         <Pressable onPress={handleOpenQueue} style={styles.bottomBtn}>
-          <Ionicons
-            name="list"
-            size={24}
-            color={player.queue.length > 0 ? p.accent : p.textTertiary}
-          />
+          <Ionicons name="list" size={24} color={player.queue.length > 0 ? p.accent : p.textTertiary} />
         </Pressable>
       </View>
     </View>

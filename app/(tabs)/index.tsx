@@ -1,13 +1,13 @@
-import { View, Text, ScrollView, FlatList, StyleSheet, Platform } from 'react-native';
+import { Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { FlatList, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AlbumCard, SectionHeader, Shimmer } from '@/components/ui';
+import Colors from '@/constants/colors';
+import type { Album } from '@/lib/api/types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
-import { SectionHeader, AlbumCard, Shimmer } from '@/components/ui';
-import Colors from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
-import { useFonts, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { router } from 'expo-router';
-import type { Album } from '@/lib/api/types';
 
 const p = Colors.palette;
 
@@ -67,10 +67,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPadding + 16, paddingBottom: 100 },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.greeting}>SonicWave</Text>

@@ -1,14 +1,29 @@
-import { useLocalSearchParams, router, Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { useQuery } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CoverArt, formatDuration, TrackItem } from '@/components/ui';
+import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { usePlayer } from '@/lib/contexts/PlayerContext';
-import { CoverArt, TrackItem, formatDuration } from '@/components/ui';
-import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 
 const p = Colors.palette;
 
@@ -48,8 +63,8 @@ export default function AlbumDetailScreen() {
     player.playTrack(songs[0], songs, 0);
   };
 
-  const handleTrackPress = (song: typeof songs[0]) => {
-    const idx = songs.findIndex(s => s.id === song.id);
+  const handleTrackPress = (song: (typeof songs)[0]) => {
+    const idx = songs.findIndex((s) => s.id === song.id);
     player.playTrack(song, songs, idx >= 0 ? idx : 0);
   };
 
@@ -57,10 +72,7 @@ export default function AlbumDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Pressable
-        onPress={() => router.back()}
-        style={[styles.backBtn, { top: topPadding + 8 }]}
-      >
+      <Pressable onPress={() => router.back()} style={[styles.backBtn, { top: topPadding + 8 }]}>
         <Ionicons name="chevron-back" size={28} color={p.white} />
       </Pressable>
 
@@ -89,7 +101,9 @@ export default function AlbumDetailScreen() {
             <View style={styles.metaRow}>
               {album.year ? <Text style={styles.metaText}>{album.year}</Text> : null}
               {album.genre ? <Text style={styles.metaText}>{album.genre}</Text> : null}
-              <Text style={styles.metaText}>{songs.length} {songs.length === 1 ? 'song' : 'songs'}</Text>
+              <Text style={styles.metaText}>
+                {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+              </Text>
               {totalDuration > 0 ? <Text style={styles.metaText}>{formatDuration(totalDuration, true)}</Text> : null}
             </View>
 

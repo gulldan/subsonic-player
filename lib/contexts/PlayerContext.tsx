@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
-import { Platform } from 'react-native';
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { Audio, type AVPlaybackStatus } from 'expo-av';
 import * as Notifications from 'expo-notifications';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import type { Song } from '@/lib/api/types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -62,35 +62,42 @@ function createWebAudio(uri: string, onEnded: () => void): AudioHandle {
   audio.addEventListener('ended', onEnded);
 
   return {
-    play: () => { audio.play().catch(() => {}); },
-    pause: () => { audio.pause(); },
-    seekTo: (s) => { audio.currentTime = s; },
+    play: () => {
+      audio.play().catch(() => {});
+    },
+    pause: () => {
+      audio.pause();
+    },
+    seekTo: (s) => {
+      audio.currentTime = s;
+    },
     destroy: () => {
       audio.pause();
       audio.removeEventListener('ended', onEnded);
       audio.src = '';
     },
     getCurrentTime: () => audio.currentTime,
-    getDuration: () => (isNaN(audio.duration) ? 0 : audio.duration),
+    getDuration: () => (Number.isNaN(audio.duration) ? 0 : audio.duration),
     getIsPlaying: () => !audio.paused && !audio.ended,
   };
 }
 
-async function createNativeAudio(
-  uri: string,
-  onStatus: (status: AVPlaybackStatus) => void
-): Promise<AudioHandle> {
-  const { sound } = await Audio.Sound.createAsync(
-    { uri },
-    { shouldPlay: true },
-    onStatus
-  );
+async function createNativeAudio(uri: string, onStatus: (status: AVPlaybackStatus) => void): Promise<AudioHandle> {
+  const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true }, onStatus);
 
   return {
-    play: () => { sound.playAsync().catch(() => {}); },
-    pause: () => { sound.pauseAsync().catch(() => {}); },
-    seekTo: (s) => { sound.setPositionAsync(s * 1000).catch(() => {}); },
-    destroy: () => { sound.unloadAsync().catch(() => {}); },
+    play: () => {
+      sound.playAsync().catch(() => {});
+    },
+    pause: () => {
+      sound.pauseAsync().catch(() => {});
+    },
+    seekTo: (s) => {
+      sound.setPositionAsync(s * 1000).catch(() => {});
+    },
+    destroy: () => {
+      sound.unloadAsync().catch(() => {});
+    },
     getCurrentTime: () => 0,
     getDuration: () => 0,
     getIsPlaying: () => false,
@@ -123,6 +130,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const trackEndedRef = useRef(false);
   const notificationReadyRef = useRef(false);
   const notificationPermissionRequestedRef = useRef(false);
+  const loadAndPlayRef = useRef<(song: Song) => Promise<void>>(async () => {});
 
   currentTrackRef.current = currentTrack;
 
@@ -194,7 +202,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [currentTrack, ensurePlayerNotificationReady, isPlaying]);
 
-  const handleTrackEnd = useCallback(async () => {
+  const handleTrackEnd = useCallback(async (): Promise<void> => {
     if (trackEndedRef.current) return;
     trackEndedRef.current = true;
 
@@ -215,86 +223,93 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const nextIdx = idx + 1;
       queueIndexRef.current = nextIdx;
       setQueueIndex(nextIdx);
-      await loadAndPlay(activeQueue[nextIdx]);
+      await loadAndPlayRef.current(activeQueue[nextIdx]);
     } else if (mode === 'all' && activeQueue.length > 0) {
       queueIndexRef.current = 0;
       setQueueIndex(0);
-      await loadAndPlay(activeQueue[0]);
+      await loadAndPlayRef.current(activeQueue[0]);
     } else {
       setIsPlaying(false);
     }
     trackEndedRef.current = false;
   }, [getActiveQueue]);
 
-  const loadAndPlay = useCallback(async (song: Song) => {
-    if (!client) return;
+  const loadAndPlay = useCallback(
+    async (song: Song) => {
+      if (!client) return;
 
-    if (audioRef.current) {
-      try { audioRef.current.destroy(); } catch {}
-      audioRef.current = null;
-    }
+      if (audioRef.current) {
+        try {
+          audioRef.current.destroy();
+        } catch {}
+        audioRef.current = null;
+      }
 
-    isLoadingRef.current = true;
-    const thisLoadId = ++loadIdRef.current;
+      isLoadingRef.current = true;
+      const thisLoadId = ++loadIdRef.current;
 
-    setIsLoading(true);
-    setPosition(0);
-    setDuration(song.duration ? song.duration * 1000 : 0);
-    hasScrobbledRef.current = false;
+      setIsLoading(true);
+      setPosition(0);
+      setDuration(song.duration ? song.duration * 1000 : 0);
+      hasScrobbledRef.current = false;
 
-    try {
-      if (thisLoadId !== loadIdRef.current) return;
+      try {
+        if (thisLoadId !== loadIdRef.current) return;
 
-      const streamUrl = client.getStreamUrl(song.id);
+        const streamUrl = client.getStreamUrl(song.id);
 
-      let handle: AudioHandle;
+        let handle: AudioHandle;
 
-      if (IS_WEB) {
-        handle = createWebAudio(streamUrl, () => handleTrackEnd());
-        handle.play();
-      } else {
-        handle = await createNativeAudio(streamUrl, (status: AVPlaybackStatus) => {
-          if (!status.isLoaded) return;
-          setPosition(status.positionMillis);
-          setDuration(status.durationMillis ?? 0);
-          setIsPlaying(status.isPlaying);
+        if (IS_WEB) {
+          handle = createWebAudio(streamUrl, () => handleTrackEnd());
+          handle.play();
+        } else {
+          handle = await createNativeAudio(streamUrl, (status: AVPlaybackStatus) => {
+            if (!status.isLoaded) return;
+            setPosition(status.positionMillis);
+            setDuration(status.durationMillis ?? 0);
+            setIsPlaying(status.isPlaying);
 
-          if (
-            status.durationMillis &&
-            status.positionMillis > status.durationMillis * 0.5 &&
-            !hasScrobbledRef.current
-          ) {
-            hasScrobbledRef.current = true;
-            const track = currentTrackRef.current;
-            if (track && client) {
-              client.scrobble(track.id).catch(() => {});
+            if (
+              status.durationMillis &&
+              status.positionMillis > status.durationMillis * 0.5 &&
+              !hasScrobbledRef.current
+            ) {
+              hasScrobbledRef.current = true;
+              const track = currentTrackRef.current;
+              if (track && client) {
+                client.scrobble(track.id).catch(() => {});
+              }
             }
-          }
 
-          if (status.didJustFinish) {
-            handleTrackEnd();
-          }
-        });
-      }
+            if (status.didJustFinish) {
+              handleTrackEnd();
+            }
+          });
+        }
 
-      if (thisLoadId !== loadIdRef.current) {
-        handle.destroy();
-        return;
-      }
+        if (thisLoadId !== loadIdRef.current) {
+          handle.destroy();
+          return;
+        }
 
-      audioRef.current = handle;
-      setCurrentTrack(song);
-      setIsPlaying(true);
-    } catch (e) {
-      console.warn('loadAndPlay error:', e);
-      setIsPlaying(false);
-    } finally {
-      if (thisLoadId === loadIdRef.current) {
-        isLoadingRef.current = false;
-        setIsLoading(false);
+        audioRef.current = handle;
+        setCurrentTrack(song);
+        setIsPlaying(true);
+      } catch (e) {
+        console.warn('loadAndPlay error:', e);
+        setIsPlaying(false);
+      } finally {
+        if (thisLoadId === loadIdRef.current) {
+          isLoadingRef.current = false;
+          setIsLoading(false);
+        }
       }
-    }
-  }, [client, handleTrackEnd]);
+    },
+    [client, handleTrackEnd],
+  );
+
+  loadAndPlayRef.current = loadAndPlay;
 
   useEffect(() => {
     if (!IS_WEB) return;
@@ -327,48 +342,51 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     syncPlayerNotification();
   }, [syncPlayerNotification]);
 
-  const playTrack = useCallback(async (song: Song, newQueue?: Song[], index?: number) => {
-    setCurrentTrack(song);
-    setPosition(0);
-    setDuration(song.duration ? song.duration * 1000 : 0);
-    setIsPlaying(true);
+  const playTrack = useCallback(
+    async (song: Song, newQueue?: Song[], index?: number) => {
+      setCurrentTrack(song);
+      setPosition(0);
+      setDuration(song.duration ? song.duration * 1000 : 0);
+      setIsPlaying(true);
 
-    if (newQueue) {
-      queueRef.current = newQueue;
-      setQueue(newQueue);
-      const idx = index ?? newQueue.findIndex(s => s.id === song.id);
-      const resolvedIdx = idx >= 0 ? idx : 0;
-      queueIndexRef.current = resolvedIdx;
-      setQueueIndex(resolvedIdx);
+      if (newQueue) {
+        queueRef.current = newQueue;
+        setQueue(newQueue);
+        const idx = index ?? newQueue.findIndex((s) => s.id === song.id);
+        const resolvedIdx = idx >= 0 ? idx : 0;
+        queueIndexRef.current = resolvedIdx;
+        setQueueIndex(resolvedIdx);
 
-      if (isShuffledRef.current) {
-        const others = newQueue.filter((_, i) => i !== resolvedIdx);
-        const shuffled = [song, ...shuffleArray(others)];
-        shuffledQueueRef.current = shuffled;
-        setShuffledQueue(shuffled);
-        queueIndexRef.current = 0;
-        setQueueIndex(0);
-      }
-    } else {
-      const activeQueue = getActiveQueue();
-      const existingIdx = activeQueue.findIndex(s => s.id === song.id);
-      if (existingIdx >= 0) {
-        queueIndexRef.current = existingIdx;
-        setQueueIndex(existingIdx);
-      } else {
-        queueRef.current = [song];
-        setQueue([song]);
-        queueIndexRef.current = 0;
-        setQueueIndex(0);
         if (isShuffledRef.current) {
-          shuffledQueueRef.current = [song];
-          setShuffledQueue([song]);
+          const others = newQueue.filter((_, i) => i !== resolvedIdx);
+          const shuffled = [song, ...shuffleArray(others)];
+          shuffledQueueRef.current = shuffled;
+          setShuffledQueue(shuffled);
+          queueIndexRef.current = 0;
+          setQueueIndex(0);
+        }
+      } else {
+        const activeQueue = getActiveQueue();
+        const existingIdx = activeQueue.findIndex((s) => s.id === song.id);
+        if (existingIdx >= 0) {
+          queueIndexRef.current = existingIdx;
+          setQueueIndex(existingIdx);
+        } else {
+          queueRef.current = [song];
+          setQueue([song]);
+          queueIndexRef.current = 0;
+          setQueueIndex(0);
+          if (isShuffledRef.current) {
+            shuffledQueueRef.current = [song];
+            setShuffledQueue([song]);
+          }
         }
       }
-    }
 
-    await loadAndPlay(song);
-  }, [loadAndPlay, getActiveQueue]);
+      await loadAndPlay(song);
+    },
+    [loadAndPlay, getActiveQueue],
+  );
 
   const pause = useCallback(async () => {
     if (audioRef.current) {
@@ -448,7 +466,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } else {
       const currentSong = currentTrackRef.current;
       if (currentSong) {
-        const originalIdx = queueRef.current.findIndex(s => s.id === currentSong.id);
+        const originalIdx = queueRef.current.findIndex((s) => s.id === currentSong.id);
         if (originalIdx >= 0) {
           queueIndexRef.current = originalIdx;
           setQueueIndex(originalIdx);
@@ -467,33 +485,36 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const addToQueue = useCallback((song: Song) => {
     queueRef.current = [...queueRef.current, song];
-    setQueue(prev => [...prev, song]);
+    setQueue((prev) => [...prev, song]);
     if (isShuffledRef.current) {
       shuffledQueueRef.current = [...shuffledQueueRef.current, song];
-      setShuffledQueue(prev => [...prev, song]);
+      setShuffledQueue((prev) => [...prev, song]);
     }
   }, []);
 
-  const removeFromQueue = useCallback((index: number) => {
-    const activeQueue = getActiveQueue();
-    if (index < 0 || index >= activeQueue.length) return;
+  const removeFromQueue = useCallback(
+    (index: number) => {
+      const activeQueue = getActiveQueue();
+      if (index < 0 || index >= activeQueue.length) return;
 
-    if (isShuffledRef.current) {
-      const removedSong = shuffledQueueRef.current[index];
-      shuffledQueueRef.current = shuffledQueueRef.current.filter((_, i) => i !== index);
-      setShuffledQueue(shuffledQueueRef.current);
-      queueRef.current = queueRef.current.filter(s => s.id !== removedSong.id);
-      setQueue(queueRef.current);
-    } else {
-      queueRef.current = queueRef.current.filter((_, i) => i !== index);
-      setQueue(queueRef.current);
-    }
+      if (isShuffledRef.current) {
+        const removedSong = shuffledQueueRef.current[index];
+        shuffledQueueRef.current = shuffledQueueRef.current.filter((_, i) => i !== index);
+        setShuffledQueue(shuffledQueueRef.current);
+        queueRef.current = queueRef.current.filter((s) => s.id !== removedSong.id);
+        setQueue(queueRef.current);
+      } else {
+        queueRef.current = queueRef.current.filter((_, i) => i !== index);
+        setQueue(queueRef.current);
+      }
 
-    if (index < queueIndexRef.current) {
-      queueIndexRef.current -= 1;
-      setQueueIndex(queueIndexRef.current);
-    }
-  }, [getActiveQueue]);
+      if (index < queueIndexRef.current) {
+        queueIndexRef.current -= 1;
+        setQueueIndex(queueIndexRef.current);
+      }
+    },
+    [getActiveQueue],
+  );
 
   const clearQueue = useCallback(() => {
     queueRef.current = currentTrackRef.current ? [currentTrackRef.current] : [];
@@ -542,39 +563,57 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo(() => ({
-    currentTrack,
-    queue: isShuffled ? shuffledQueue : queue,
-    queueIndex,
-    isPlaying,
-    duration,
-    position,
-    isShuffled,
-    repeatMode,
-    isLoading,
-    playTrack,
-    pause,
-    resume,
-    next,
-    previous,
-    seekTo,
-    toggleShuffle,
-    toggleRepeat,
-    addToQueue,
-    removeFromQueue,
-    clearQueue,
-    moveInQueue,
-  }), [
-    currentTrack, queue, shuffledQueue, queueIndex, isPlaying, duration, position,
-    isShuffled, repeatMode, isLoading, playTrack, pause, resume, next, previous,
-    seekTo, toggleShuffle, toggleRepeat, addToQueue, removeFromQueue, clearQueue, moveInQueue,
-  ]);
-
-  return (
-    <PlayerContext.Provider value={value}>
-      {children}
-    </PlayerContext.Provider>
+  const value = useMemo(
+    () => ({
+      currentTrack,
+      queue: isShuffled ? shuffledQueue : queue,
+      queueIndex,
+      isPlaying,
+      duration,
+      position,
+      isShuffled,
+      repeatMode,
+      isLoading,
+      playTrack,
+      pause,
+      resume,
+      next,
+      previous,
+      seekTo,
+      toggleShuffle,
+      toggleRepeat,
+      addToQueue,
+      removeFromQueue,
+      clearQueue,
+      moveInQueue,
+    }),
+    [
+      currentTrack,
+      queue,
+      shuffledQueue,
+      queueIndex,
+      isPlaying,
+      duration,
+      position,
+      isShuffled,
+      repeatMode,
+      isLoading,
+      playTrack,
+      pause,
+      resume,
+      next,
+      previous,
+      seekTo,
+      toggleShuffle,
+      toggleRepeat,
+      addToQueue,
+      removeFromQueue,
+      clearQueue,
+      moveInQueue,
+    ],
   );
+
+  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
 
 export function usePlayer() {

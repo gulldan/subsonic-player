@@ -1,13 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { useQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '@/constants/colors';
+import type { Genre } from '@/lib/api/types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
-import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { Genre } from '@/lib/api/types';
 
 const p = Colors.palette;
 
@@ -54,7 +60,7 @@ export default function GenresScreen() {
       ) : (
         <FlatList
           data={sortedGenres}
-          keyExtractor={item => item.value}
+          keyExtractor={(item) => item.value}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
@@ -66,7 +72,8 @@ export default function GenresScreen() {
               <View style={styles.genreInfo}>
                 <Text style={styles.genreName}>{item.value}</Text>
                 <Text style={styles.genreMeta}>
-                  {item.albumCount} {item.albumCount === 1 ? 'album' : 'albums'} · {item.songCount} {item.songCount === 1 ? 'song' : 'songs'}
+                  {item.albumCount} {item.albumCount === 1 ? 'album' : 'albums'} · {item.songCount}{' '}
+                  {item.songCount === 1 ? 'song' : 'songs'}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={p.textTertiary} />

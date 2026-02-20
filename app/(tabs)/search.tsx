@@ -1,15 +1,15 @@
-import { View, TextInput, ScrollView, FlatList, StyleSheet, Platform } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/lib/contexts/AuthContext';
-import { useI18n } from '@/lib/i18n';
-import { usePlayer } from '@/lib/contexts/PlayerContext';
-import { TrackItem, AlbumCard, ArtistCard, SectionHeader, EmptyState } from '@/components/ui';
-import Colors from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { router } from 'expo-router';
-import type { Artist, Album, Song, SearchResult3 } from '@/lib/api/types';
+import { useEffect, useRef, useState } from 'react';
+import { FlatList, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AlbumCard, ArtistCard, EmptyState, SectionHeader, TrackItem } from '@/components/ui';
+import Colors from '@/constants/colors';
+import type { Album, Artist, SearchResult3, Song } from '@/lib/api/types';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { usePlayer } from '@/lib/contexts/PlayerContext';
+import { useI18n } from '@/lib/i18n';
 
 const p = Colors.palette;
 
@@ -104,10 +104,7 @@ export default function SearchScreen() {
       ) : !hasResults && !isSearching ? (
         <EmptyState icon="musical-notes" message={t('search.noResults')} />
       ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           {artists.length > 0 && (
             <View style={styles.section}>
               <SectionHeader title={t('search.artists')} />

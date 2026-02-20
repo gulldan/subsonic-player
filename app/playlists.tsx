@@ -1,15 +1,32 @@
-import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { useAuth } from '@/lib/contexts/AuthContext';
-import { useI18n } from '@/lib/i18n';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CoverArt, formatDuration } from '@/components/ui';
 import Colors from '@/constants/colors';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform, Alert, Modal, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { Playlist } from '@/lib/api/types';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { useI18n } from '@/lib/i18n';
 
 const p = Colors.palette;
 
@@ -90,7 +107,7 @@ export default function PlaylistsScreen() {
       ) : (
         <FlatList
           data={playlists}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
@@ -100,7 +117,9 @@ export default function PlaylistsScreen() {
             >
               <CoverArt coverArtId={item.coverArt} size={56} borderRadius={8} />
               <View style={styles.playlistInfo}>
-                <Text style={styles.playlistName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.playlistName} numberOfLines={1}>
+                  {item.name}
+                </Text>
                 <Text style={styles.playlistMeta}>
                   {item.songCount} {item.songCount === 1 ? 'song' : 'songs'}
                   {item.duration > 0 ? ` \u00B7 ${formatDuration(item.duration, true)}` : ''}
@@ -112,12 +131,7 @@ export default function PlaylistsScreen() {
         />
       )}
 
-      <Modal
-        visible={isCreateModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeCreateModal}
-      >
+      <Modal visible={isCreateModalVisible} transparent animationType="fade" onRequestClose={closeCreateModal}>
         <Pressable style={styles.modalBackdrop} onPress={closeCreateModal}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
             <Text style={styles.modalTitle}>{t('playlist.newPlaylist')}</Text>

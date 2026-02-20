@@ -1,14 +1,23 @@
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { useAuth } from '@/lib/contexts/AuthContext';
-import { useI18n } from '@/lib/i18n';
+import { Ionicons } from '@expo/vector-icons';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { useQuery } from '@tanstack/react-query';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AlbumCard, EmptyState } from '@/components/ui';
 import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { Album } from '@/lib/api/types';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { useI18n } from '@/lib/i18n';
 
 const p = Colors.palette;
 
@@ -47,7 +56,9 @@ export default function GenreDetailScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
-        <Text style={styles.title} numberOfLines={1}>{genreName || t('album.genre')}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {genreName || t('album.genre')}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -61,13 +72,11 @@ export default function GenreDetailScreen() {
         <FlatList
           data={albums}
           numColumns={2}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100, gap: 20 }}
           columnWrapperStyle={{ gap: 16 }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <AlbumCard album={item} onPress={handleAlbumPress} size={itemSize} />
-          )}
+          renderItem={({ item }) => <AlbumCard album={item} onPress={handleAlbumPress} size={itemSize} />}
         />
       )}
     </View>

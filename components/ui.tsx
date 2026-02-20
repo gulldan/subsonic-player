@@ -1,28 +1,25 @@
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
+import { PixelRatio, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  SlideInDown,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withTiming,
   withSequence,
-  SlideInDown,
+  withTiming,
 } from 'react-native-reanimated';
-import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import Colors from '@/constants/colors';
+import type { Album, Artist, Song } from '@/lib/api/types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { usePlayer } from '@/lib/contexts/PlayerContext';
-import Colors from '@/constants/colors';
-import type { Song, Album, Artist } from '@/lib/api/types';
 
 const p = Colors.palette;
 
-export function formatDuration(
-  value: number,
-  inSeconds?: boolean
-): string {
+export function formatDuration(value: number, inSeconds?: boolean): string {
   const totalSeconds = inSeconds ? Math.floor(value) : Math.floor(value / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -45,16 +42,13 @@ export function CoverArt({
   borderRadius?: number;
 }) {
   const { client } = useAuth();
-  const url = coverArtId && client ? client.getCoverArtUrl(coverArtId, size) : null;
+  const [hasError, setHasError] = useState(false);
+  const requestSize = Math.ceil(size * PixelRatio.get());
+  const url = coverArtId && client ? client.getCoverArtUrl(coverArtId, requestSize) : null;
 
-  if (!url) {
+  if (!url || hasError) {
     return (
-      <View
-        style={[
-          styles.coverPlaceholder,
-          { width: size, height: size, borderRadius },
-        ]}
-      >
+      <View style={[styles.coverPlaceholder, { width: size, height: size, borderRadius }]}>
         <Ionicons name="musical-notes" size={size * 0.4} color={p.textTertiary} />
       </View>
     );
@@ -66,6 +60,8 @@ export function CoverArt({
       style={{ width: size, height: size, borderRadius }}
       contentFit="cover"
       transition={200}
+      cachePolicy="disk"
+      onError={() => setHasError(true)}
     />
   );
 }
@@ -93,10 +89,7 @@ export function TrackItem({
       onLongPress={onLongPress ? () => onLongPress(song) : undefined}
       hitSlop={4}
       unstable_pressDelay={0}
-      style={({ pressed }) => [
-        styles.trackRow,
-        pressed && { opacity: 0.6 },
-      ]}
+      style={({ pressed }) => [styles.trackRow, pressed && { opacity: 0.6 }]}
     >
       {showArt ? (
         <CoverArt coverArtId={song.coverArt} size={40} borderRadius={6} />
@@ -104,22 +97,14 @@ export function TrackItem({
         <Text style={styles.trackIndex}>{index}</Text>
       ) : null}
       <View style={styles.trackInfo}>
-        <Text
-          style={[
-            styles.trackTitle,
-            isActive && { color: p.accent },
-          ]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.trackTitle, isActive && { color: p.accent }]} numberOfLines={1}>
           {song.title}
         </Text>
         <Text style={styles.trackArtist} numberOfLines={1}>
           {song.artist ?? ''}
         </Text>
       </View>
-      {durationText ? (
-        <Text style={styles.trackDuration}>{durationText}</Text>
-      ) : null}
+      {durationText ? <Text style={styles.trackDuration}>{durationText}</Text> : null}
     </Pressable>
   );
 }
@@ -134,13 +119,7 @@ export function AlbumCard({
   size?: number;
 }) {
   return (
-    <Pressable
-      onPress={() => onPress(album)}
-      style={({ pressed }) => [
-        { width: size },
-        pressed && { opacity: 0.7 },
-      ]}
-    >
+    <Pressable onPress={() => onPress(album)} style={({ pressed }) => [{ width: size }, pressed && { opacity: 0.7 }]}>
       <CoverArt coverArtId={album.coverArt} size={size} borderRadius={12} />
       <Text style={styles.albumName} numberOfLines={2}>
         {album.name}
@@ -152,20 +131,11 @@ export function AlbumCard({
   );
 }
 
-export function ArtistCard({
-  artist,
-  onPress,
-}: {
-  artist: Artist;
-  onPress: (artist: Artist) => void;
-}) {
+export function ArtistCard({ artist, onPress }: { artist: Artist; onPress: (artist: Artist) => void }) {
   return (
     <Pressable
       onPress={() => onPress(artist)}
-      style={({ pressed }) => [
-        styles.artistCard,
-        pressed && { opacity: 0.7 },
-      ]}
+      style={({ pressed }) => [styles.artistCard, pressed && { opacity: 0.7 }]}
     >
       <CoverArt coverArtId={artist.coverArt} size={80} borderRadius={40} />
       <Text style={styles.artistName} numberOfLines={1}>
@@ -204,7 +174,7 @@ export function MiniPlayer({ onPress, bottomOffset }: { onPress: () => void; bot
 
   useEffect(() => {
     setIsStarred(!!currentTrack?.starred);
-  }, [currentTrack?.id, currentTrack?.starred]);
+  }, [currentTrack?.starred]);
 
   if (!currentTrack) return null;
 
@@ -248,13 +218,21 @@ export function MiniPlayer({ onPress, bottomOffset }: { onPress: () => void; bot
       <Pressable onPress={onPress} style={styles.miniPlayerContent}>
         <CoverArt coverArtId={currentTrack.coverArt} size={48} borderRadius={8} />
         <View style={styles.miniPlayerInfo}>
-          <Text style={styles.miniPlayerTitle} numberOfLines={1}>{currentTrack.title}</Text>
-          <Text style={styles.miniPlayerArtist} numberOfLines={1}>{currentTrack.artist ?? ''}</Text>
+          <Text style={styles.miniPlayerTitle} numberOfLines={1}>
+            {currentTrack.title}
+          </Text>
+          <Text style={styles.miniPlayerArtist} numberOfLines={1}>
+            {currentTrack.artist ?? ''}
+          </Text>
         </View>
       </Pressable>
 
       <Pressable onPress={handleStar} style={styles.miniPlayerBtn}>
-        <Ionicons name={isStarred ? 'heart' : 'heart-outline'} size={22} color={isStarred ? p.accent : p.textSecondary} />
+        <Ionicons
+          name={isStarred ? 'heart' : 'heart-outline'}
+          size={22}
+          color={isStarred ? p.accent : p.textSecondary}
+        />
       </Pressable>
 
       <Pressable onPress={handlePlayPause} style={styles.miniPlayPauseBtn}>
@@ -283,12 +261,9 @@ export function Shimmer({
 
   useEffect(() => {
     opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 800 }),
-        withTiming(0.3, { duration: 800 })
-      ),
+      withSequence(withTiming(1, { duration: 800 }), withTiming(0.3, { duration: 800 })),
       -1,
-      false
+      false,
     );
   }, [opacity]);
 
@@ -312,13 +287,7 @@ export function Shimmer({
   );
 }
 
-export function EmptyState({
-  icon,
-  message,
-}: {
-  icon: string;
-  message: string;
-}) {
+export function EmptyState({ icon, message }: { icon: string; message: string }) {
   return (
     <View style={styles.emptyState}>
       <Ionicons name={icon as any} size={48} color={p.textTertiary} />
@@ -418,15 +387,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingRight: 4,
     overflow: 'hidden',
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 -2px 20px rgba(0,0,0,0.5)',
-    } : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      elevation: 16,
-    }),
+    ...(Platform.OS === 'web'
+      ? {
+          boxShadow: '0 -2px 20px rgba(0,0,0,0.5)',
+        }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.4,
+          shadowRadius: 12,
+          elevation: 16,
+        }),
   } as any,
   miniProgressBar: {
     position: 'absolute' as const,

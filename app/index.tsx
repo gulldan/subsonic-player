@@ -1,12 +1,22 @@
-import { useState, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { Redirect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '@/constants/colors';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
-import { Redirect } from 'expo-router';
-import Colors from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { Platform, View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 const p = Colors.palette;
 
@@ -61,10 +71,7 @@ export default function LoginScreen() {
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 40 }]}
         keyboardShouldPersistTaps="handled"
@@ -78,10 +85,7 @@ export default function LoginScreen() {
 
         <View style={styles.form}>
           <TextInput
-            style={[
-              styles.input,
-              focusedField === 'url' && styles.inputFocused,
-            ]}
+            style={[styles.input, focusedField === 'url' && styles.inputFocused]}
             placeholder="https://music.example.com"
             placeholderTextColor={p.textTertiary}
             value={serverUrl}
@@ -95,10 +99,7 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            style={[
-              styles.input,
-              focusedField === 'username' && styles.inputFocused,
-            ]}
+            style={[styles.input, focusedField === 'username' && styles.inputFocused]}
             placeholder={t('auth.username')}
             placeholderTextColor={p.textTertiary}
             value={username}
@@ -111,10 +112,7 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            style={[
-              styles.input,
-              focusedField === 'password' && styles.inputFocused,
-            ]}
+            style={[styles.input, focusedField === 'password' && styles.inputFocused]}
             placeholder={t('auth.password')}
             placeholderTextColor={p.textTertiary}
             value={password}
@@ -143,9 +141,7 @@ export default function LoginScreen() {
             )}
           </Pressable>
 
-          {error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : null}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

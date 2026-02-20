@@ -1,10 +1,10 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, Platform } from 'react-native';
-import { useI18n } from '@/lib/i18n';
-import Colors from '@/constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { router } from 'expo-router';
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '@/constants/colors';
+import { useI18n } from '@/lib/i18n';
 
 const p = Colors.palette;
 
@@ -34,10 +34,7 @@ export default function LibraryScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPadding + 16, paddingBottom: 100 },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{t('tabs.library')}</Text>
@@ -46,10 +43,7 @@ export default function LibraryScreen() {
           <Pressable
             key={cat.route}
             onPress={() => router.push(cat.route as any)}
-            style={({ pressed }) => [
-              styles.categoryRow,
-              pressed && { opacity: 0.6 },
-            ]}
+            style={({ pressed }) => [styles.categoryRow, pressed && { opacity: 0.6 }]}
           >
             <Ionicons name={cat.icon} size={22} color={p.accent} />
             <Text style={styles.categoryLabel}>{t(cat.labelKey)}</Text>

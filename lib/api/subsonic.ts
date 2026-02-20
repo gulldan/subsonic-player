@@ -1,23 +1,23 @@
-import { md5 } from './md5';
 import { Platform } from 'react-native';
 import { getApiUrl } from '@/lib/query-client';
+import { md5 } from './md5';
 import type {
-  ServerConfig,
-  SubsonicResponse,
-  ArtistsResponse,
-  ArtistResponse,
-  AlbumResponse,
   AlbumList2Response,
+  AlbumListType,
+  AlbumResponse,
+  ArtistInfoResponse,
+  ArtistResponse,
+  ArtistsResponse,
+  GenresResponse,
+  PlaylistResponse,
+  PlaylistsResponse,
   RandomSongsResponse,
   SearchResult3Response,
-  PlaylistsResponse,
-  PlaylistResponse,
-  GenresResponse,
-  StarredResponse,
-  ArtistInfoResponse,
+  ServerConfig,
   SongResponse,
+  StarredResponse,
+  SubsonicResponse,
   TopSongsResponse,
-  AlbumListType,
 } from './types';
 
 const API_VERSION = '1.16.1';
@@ -71,21 +71,28 @@ export class SubsonicClient {
     return endpoint.includes('.') ? endpoint : `${endpoint}.view`;
   }
 
-  private buildAuthParams(): Record<string, string> {
-    return {
+  private buildAuthParams(includeFormat = true): Record<string, string> {
+    const params: Record<string, string> = {
       u: this.config.username,
       t: this.token,
       s: this.salt,
       v: API_VERSION,
       c: CLIENT_NAME,
-      f: 'json',
     };
+    if (includeFormat) {
+      params.f = 'json';
+    }
+    return params;
   }
 
-  private buildDirectUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
+  private buildDirectUrl(
+    endpoint: string,
+    params: Record<string, string | number | undefined> = {},
+    includeFormat = true,
+  ): string {
     const base = `${this.getServerUrl()}/rest/${this.normalizeEndpoint(endpoint)}`;
     const searchParams = new URLSearchParams();
-    const authParams = this.buildAuthParams();
+    const authParams = this.buildAuthParams(includeFormat);
     for (const [key, value] of Object.entries(authParams)) {
       searchParams.set(key, value);
     }
@@ -97,11 +104,15 @@ export class SubsonicClient {
     return `${base}?${searchParams.toString()}`;
   }
 
-  private buildProxyUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
+  private buildProxyUrl(
+    endpoint: string,
+    params: Record<string, string | number | undefined> = {},
+    includeFormat = true,
+  ): string {
     const base = `${this.proxyBaseUrl}api/subsonic/${this.normalizeEndpoint(endpoint)}`;
     const searchParams = new URLSearchParams();
     searchParams.set('serverUrl', this.getServerUrl());
-    const authParams = this.buildAuthParams();
+    const authParams = this.buildAuthParams(includeFormat);
     for (const [key, value] of Object.entries(authParams)) {
       searchParams.set(key, value);
     }
@@ -116,9 +127,7 @@ export class SubsonicClient {
   private async request<T>(endpoint: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
     await this.authReady;
 
-    const url = this.proxyBaseUrl
-      ? this.buildProxyUrl(endpoint, params)
-      : this.buildDirectUrl(endpoint, params);
+    const url = this.proxyBaseUrl ? this.buildProxyUrl(endpoint, params) : this.buildDirectUrl(endpoint, params);
 
     const response = await fetch(url);
 
@@ -162,7 +171,7 @@ export class SubsonicClient {
     type: AlbumListType,
     size: number = 20,
     offset: number = 0,
-    extraParams: AlbumList2Params = {}
+    extraParams: AlbumList2Params = {},
   ): Promise<AlbumList2Response> {
     return this.request<AlbumList2Response>('getAlbumList2', { type, size, offset, ...extraParams });
   }
@@ -256,16 +265,16 @@ export class SubsonicClient {
       params.size = size;
     }
     if (this.proxyBaseUrl) {
-      return this.buildProxyUrl('getCoverArt', params);
+      return this.buildProxyUrl('getCoverArt', params, false);
     }
-    return this.buildDirectUrl('getCoverArt', params);
+    return this.buildDirectUrl('getCoverArt', params, false);
   }
 
   getStreamUrl(id: string): string {
     if (this.proxyBaseUrl) {
-      return this.buildProxyUrl('stream', { id });
+      return this.buildProxyUrl('stream', { id }, false);
     }
-    return this.buildDirectUrl('stream', { id });
+    return this.buildDirectUrl('stream', { id }, false);
   }
 
   async getTopSongs(artist: string, count: number = 10): Promise<TopSongsResponse> {

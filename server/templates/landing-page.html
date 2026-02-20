@@ -395,7 +395,7 @@
 
     <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
     <script>
-      (function () {
+      (() => {
         const ua = navigator.userAgent;
         const loadingEl = document.getElementById("loading");
         const contentEl = document.getElementById("content");
@@ -448,7 +448,7 @@
           loadingEl.style.display = "block";
           contentEl.style.display = "none";
           window.location.href = deepLink;
-          setTimeout(function () {
+          setTimeout(() => {
             loadingEl.style.display = "none";
             contentEl.style.display = "block";
           }, 500);

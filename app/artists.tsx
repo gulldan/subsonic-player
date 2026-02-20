@@ -1,14 +1,29 @@
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { useQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { useAuth } from '@/lib/contexts/AuthContext';
-import { useI18n } from '@/lib/i18n';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CoverArt } from '@/components/ui';
 import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { Artist } from '@/lib/api/types';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { useI18n } from '@/lib/i18n';
 
 const p = Colors.palette;
 
@@ -65,7 +80,7 @@ export default function ArtistsScreen() {
           data={artists}
           numColumns={3}
           key="artists-3"
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100, gap: 24 }}
           columnWrapperStyle={{ gap: 12 }}
           showsVerticalScrollIndicator={false}
@@ -75,7 +90,9 @@ export default function ArtistsScreen() {
               style={({ pressed }) => [{ width: itemSize, alignItems: 'center' }, pressed && { opacity: 0.7 }]}
             >
               <CoverArt coverArtId={item.coverArt} size={itemSize - 8} borderRadius={(itemSize - 8) / 2} />
-              <Text style={styles.artistName} numberOfLines={2}>{item.name}</Text>
+              <Text style={styles.artistName} numberOfLines={2}>
+                {item.name}
+              </Text>
             </Pressable>
           )}
         />
