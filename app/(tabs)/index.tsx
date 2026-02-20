@@ -1,6 +1,5 @@
 import { View, Text, ScrollView, FlatList, StyleSheet, Platform } from 'react-native';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { usePlayer } from '@/lib/contexts/PlayerContext';
 import { useI18n } from '@/lib/i18n';
 import { SectionHeader, AlbumCard, Shimmer } from '@/components/ui';
 import Colors from '@/constants/colors';
@@ -25,7 +24,6 @@ function ShimmerRow() {
 export default function HomeScreen() {
   const { client } = useAuth();
   const { t } = useI18n();
-  const { playTrack } = usePlayer();
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({ Inter_600SemiBold, Inter_700Bold });
 
@@ -47,6 +45,7 @@ export default function HomeScreen() {
     enabled: !!client,
   });
 
+  if (!fontsLoaded) return null;
   if (!client) return null;
 
   const randomAlbums = randomData?.albumList2?.album ?? [];

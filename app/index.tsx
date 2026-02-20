@@ -34,9 +34,6 @@ export default function LoginScreen() {
     if (!url || !username.trim() || !password.trim()) return;
 
     url = url.replace(/\/+$/, '');
-    if (!/^https?:\/\//i.test(url)) {
-      url = 'https://' + url;
-    }
 
     setConnecting(true);
     const success = await auth.connect(url, username.trim(), password);

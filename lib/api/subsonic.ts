@@ -1,4 +1,5 @@
 import { md5 } from './md5';
+import { Platform } from 'react-native';
 import { getApiUrl } from '@/lib/query-client';
 import type {
   ServerConfig,
@@ -15,11 +16,19 @@ import type {
   StarredResponse,
   ArtistInfoResponse,
   SongResponse,
+  TopSongsResponse,
   AlbumListType,
 } from './types';
 
 const API_VERSION = '1.16.1';
 const CLIENT_NAME = 'SonicWave';
+const IS_WEB = Platform.OS === 'web';
+
+type AlbumList2Params = {
+  genre?: string;
+  fromYear?: number;
+  toYear?: number;
+};
 
 export class SubsonicClient {
   private config: ServerConfig;
@@ -30,10 +39,12 @@ export class SubsonicClient {
 
   constructor(config: ServerConfig) {
     this.config = config;
-    try {
-      this.proxyBaseUrl = getApiUrl();
-    } catch {
-      this.proxyBaseUrl = '';
+    if (IS_WEB) {
+      try {
+        this.proxyBaseUrl = getApiUrl();
+      } catch {
+        this.proxyBaseUrl = '';
+      }
     }
     if (config.salt && config.token) {
       this.salt = config.salt;
@@ -50,7 +61,14 @@ export class SubsonicClient {
   }
 
   private getServerUrl(): string {
-    return this.config.url.replace(/\/+$/, '');
+    return this.config.url
+      .trim()
+      .replace(/\/+$/, '')
+      .replace(/\/rest$/i, '');
+  }
+
+  private normalizeEndpoint(endpoint: string): string {
+    return endpoint.includes('.') ? endpoint : `${endpoint}.view`;
   }
 
   private buildAuthParams(): Record<string, string> {
@@ -64,10 +82,9 @@ export class SubsonicClient {
     };
   }
 
-  private buildProxyUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
-    const base = `${this.proxyBaseUrl}api/subsonic/${endpoint}`;
+  private buildDirectUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
+    const base = `${this.getServerUrl()}/rest/${this.normalizeEndpoint(endpoint)}`;
     const searchParams = new URLSearchParams();
-    searchParams.set('serverUrl', this.getServerUrl());
     const authParams = this.buildAuthParams();
     for (const [key, value] of Object.entries(authParams)) {
       searchParams.set(key, value);
@@ -80,9 +97,10 @@ export class SubsonicClient {
     return `${base}?${searchParams.toString()}`;
   }
 
-  private buildDirectUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
-    const base = `${this.getServerUrl()}/rest/${endpoint}`;
+  private buildProxyUrl(endpoint: string, params: Record<string, string | number | undefined> = {}): string {
+    const base = `${this.proxyBaseUrl}api/subsonic/${this.normalizeEndpoint(endpoint)}`;
     const searchParams = new URLSearchParams();
+    searchParams.set('serverUrl', this.getServerUrl());
     const authParams = this.buildAuthParams();
     for (const [key, value] of Object.entries(authParams)) {
       searchParams.set(key, value);
@@ -140,8 +158,13 @@ export class SubsonicClient {
     return this.request<AlbumResponse>('getAlbum', { id });
   }
 
-  async getAlbumList2(type: AlbumListType, size: number = 20, offset: number = 0): Promise<AlbumList2Response> {
-    return this.request<AlbumList2Response>('getAlbumList2', { type, size, offset });
+  async getAlbumList2(
+    type: AlbumListType,
+    size: number = 20,
+    offset: number = 0,
+    extraParams: AlbumList2Params = {}
+  ): Promise<AlbumList2Response> {
+    return this.request<AlbumList2Response>('getAlbumList2', { type, size, offset, ...extraParams });
   }
 
   async getRandomSongs(size: number = 20, genre?: string): Promise<RandomSongsResponse> {
@@ -173,7 +196,9 @@ export class SubsonicClient {
   async createPlaylist(name: string, songIds: string[]): Promise<PlaylistResponse> {
     await this.authReady;
     const searchParams = new URLSearchParams();
-    searchParams.set('serverUrl', this.getServerUrl());
+    if (this.proxyBaseUrl) {
+      searchParams.set('serverUrl', this.getServerUrl());
+    }
     const authParams = this.buildAuthParams();
     for (const [key, value] of Object.entries(authParams)) {
       searchParams.set(key, value);
@@ -182,7 +207,12 @@ export class SubsonicClient {
     for (const songId of songIds) {
       searchParams.append('songId', songId);
     }
-    const url = `${this.proxyBaseUrl}api/subsonic/createPlaylist?${searchParams.toString()}`;
+
+    const endpoint = this.normalizeEndpoint('createPlaylist');
+    const base = this.proxyBaseUrl
+      ? `${this.proxyBaseUrl}api/subsonic/${endpoint}`
+      : `${this.getServerUrl()}/rest/${endpoint}`;
+    const url = `${base}?${searchParams.toString()}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -236,6 +266,10 @@ export class SubsonicClient {
       return this.buildProxyUrl('stream', { id });
     }
     return this.buildDirectUrl('stream', { id });
+  }
+
+  async getTopSongs(artist: string, count: number = 10): Promise<TopSongsResponse> {
+    return this.request<TopSongsResponse>('getTopSongs', { artist, count });
   }
 
   async getArtistInfo2(id: string): Promise<ArtistInfoResponse> {

@@ -43,7 +43,7 @@ export default function AlbumsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
-        <Text style={styles.title}>Albums</Text>
+        <Text style={styles.title}>{t('library.albums')}</Text>
         <View style={{ width: 40 }} />
       </View>
 

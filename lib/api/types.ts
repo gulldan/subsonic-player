@@ -194,6 +194,12 @@ export interface RandomSongsResponse {
   };
 }
 
+export interface TopSongsResponse {
+  topSongs: {
+    song: Song[];
+  };
+}
+
 export type AlbumListType =
   | 'newest'
   | 'frequent'

@@ -91,6 +91,8 @@ export function TrackItem({
     <Pressable
       onPress={() => onPress(song)}
       onLongPress={onLongPress ? () => onLongPress(song) : undefined}
+      hitSlop={4}
+      unstable_pressDelay={0}
       style={({ pressed }) => [
         styles.trackRow,
         pressed && { opacity: 0.6 },
@@ -202,7 +204,7 @@ export function MiniPlayer({ onPress, bottomOffset }: { onPress: () => void; bot
 
   useEffect(() => {
     setIsStarred(!!currentTrack?.starred);
-  }, [currentTrack?.id]);
+  }, [currentTrack?.id, currentTrack?.starred]);
 
   if (!currentTrack) return null;
 
@@ -288,7 +290,7 @@ export function Shimmer({
       -1,
       false
     );
-  }, []);
+  }, [opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

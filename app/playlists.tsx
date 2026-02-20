@@ -1,12 +1,13 @@
+import { useState } from 'react';
 import { router, Stack } from 'expo-router';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
 import { CoverArt, formatDuration } from '@/components/ui';
 import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Playlist } from '@/lib/api/types';
 
@@ -16,7 +17,11 @@ export default function PlaylistsScreen() {
   const { client } = useAuth();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['playlists'],
@@ -33,6 +38,37 @@ export default function PlaylistsScreen() {
     router.push(`/playlist/${playlist.id}`);
   };
 
+  const openCreateModal = () => {
+    setNewPlaylistName('');
+    setIsCreateModalVisible(true);
+  };
+
+  const closeCreateModal = () => {
+    if (isCreating) return;
+    setIsCreateModalVisible(false);
+  };
+
+  const handleCreatePlaylist = async () => {
+    const playlistName = newPlaylistName.trim();
+    if (!client || !playlistName || isCreating) return;
+
+    setIsCreating(true);
+    try {
+      const created = await client.createPlaylist(playlistName, []);
+      await queryClient.invalidateQueries({ queryKey: ['playlists'] });
+      setIsCreateModalVisible(false);
+      setNewPlaylistName('');
+      const createdId = created?.playlist?.id;
+      if (createdId) {
+        router.push(`/playlist/${createdId}`);
+      }
+    } catch {
+      Alert.alert(t('common.error'), 'Failed to create playlist');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -42,7 +78,9 @@ export default function PlaylistsScreen() {
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>Playlists</Text>
-        <View style={{ width: 40 }} />
+        <Pressable onPress={openCreateModal} style={styles.actionBtn}>
+          <Ionicons name="add" size={24} color={p.white} />
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -73,6 +111,42 @@ export default function PlaylistsScreen() {
           )}
         />
       )}
+
+      <Modal
+        visible={isCreateModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCreateModal}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={closeCreateModal}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>{t('playlist.newPlaylist')}</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder={t('playlist.playlistName')}
+              placeholderTextColor={p.textTertiary}
+              value={newPlaylistName}
+              onChangeText={setNewPlaylistName}
+              autoFocus
+              autoCapitalize="sentences"
+              returnKeyType="done"
+              onSubmitEditing={handleCreatePlaylist}
+            />
+            <View style={styles.modalActions}>
+              <Pressable onPress={closeCreateModal} style={styles.modalBtn} disabled={isCreating}>
+                <Text style={styles.modalBtnSecondary}>{t('common.cancel')}</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleCreatePlaylist}
+                style={[styles.modalBtn, styles.modalBtnPrimary, isCreating && { opacity: 0.6 }]}
+                disabled={isCreating || !newPlaylistName.trim()}
+              >
+                <Text style={styles.modalBtnPrimaryText}>{t('playlist.create')}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -89,6 +163,12 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
@@ -126,5 +206,63 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
     color: p.textSecondary,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    borderRadius: 14,
+    backgroundColor: p.surface,
+    borderWidth: 1,
+    borderColor: p.border,
+    padding: 16,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_600SemiBold',
+    color: p.textPrimary,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: p.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    color: p.textPrimary,
+    backgroundColor: p.black,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  modalBtn: {
+    minWidth: 84,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  modalBtnPrimary: {
+    backgroundColor: p.accent,
+  },
+  modalBtnSecondary: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: p.textSecondary,
+  },
+  modalBtnPrimaryText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: p.black,
   },
 });

@@ -27,6 +27,8 @@ export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold });
 
+  if (!fontsLoaded) return null;
+
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
 
   return (

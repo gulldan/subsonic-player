@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
+import * as Notifications from 'expo-notifications';
 import type { Song } from '@/lib/api/types';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -42,6 +43,9 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 const IS_WEB = Platform.OS === 'web';
+const IS_ANDROID = Platform.OS === 'android';
+const PLAYER_NOTIFICATION_CHANNEL_ID = 'player-status';
+const PLAYER_NOTIFICATION_ID = 'player-status-now-playing';
 
 interface AudioHandle {
   play: () => void;
@@ -117,6 +121,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const isLoadingRef = useRef(false);
   const loadIdRef = useRef(0);
   const trackEndedRef = useRef(false);
+  const notificationReadyRef = useRef(false);
+  const notificationPermissionRequestedRef = useRef(false);
 
   currentTrackRef.current = currentTrack;
 
@@ -132,6 +138,61 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const getActiveQueue = useCallback(() => {
     return isShuffledRef.current ? shuffledQueueRef.current : queueRef.current;
   }, []);
+
+  const ensurePlayerNotificationReady = useCallback(async () => {
+    if (!IS_ANDROID) return false;
+    if (notificationReadyRef.current) return true;
+
+    try {
+      let permissions = await Notifications.getPermissionsAsync();
+      if (!permissions.granted && !notificationPermissionRequestedRef.current) {
+        notificationPermissionRequestedRef.current = true;
+        permissions = await Notifications.requestPermissionsAsync();
+      }
+      if (!permissions.granted) return false;
+
+      await Notifications.setNotificationChannelAsync(PLAYER_NOTIFICATION_CHANNEL_ID, {
+        name: 'Player Status',
+        importance: Notifications.AndroidImportance.LOW,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        showBadge: false,
+        enableVibrate: false,
+      });
+      notificationReadyRef.current = true;
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const syncPlayerNotification = useCallback(async () => {
+    if (!IS_ANDROID) return;
+
+    try {
+      if (!currentTrack || !isPlaying) {
+        await Notifications.dismissNotificationAsync(PLAYER_NOTIFICATION_ID).catch(() => {});
+        return;
+      }
+
+      const isReady = await ensurePlayerNotificationReady();
+      if (!isReady) return;
+
+      await Notifications.dismissNotificationAsync(PLAYER_NOTIFICATION_ID).catch(() => {});
+      await Notifications.scheduleNotificationAsync({
+        identifier: PLAYER_NOTIFICATION_ID,
+        content: {
+          title: currentTrack.title,
+          body: currentTrack.artist ?? 'SonicWave',
+          subtitle: currentTrack.album ?? undefined,
+          data: { trackId: currentTrack.id, source: 'player' },
+          sticky: true,
+          autoDismiss: false,
+          sound: false,
+        },
+        trigger: { channelId: PLAYER_NOTIFICATION_CHANNEL_ID },
+      });
+    } catch {}
+  }, [currentTrack, ensurePlayerNotificationReady, isPlaying]);
 
   const handleTrackEnd = useCallback(async () => {
     if (trackEndedRef.current) return;
@@ -177,6 +238,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const thisLoadId = ++loadIdRef.current;
 
     setIsLoading(true);
+    setPosition(0);
+    setDuration(song.duration ? song.duration * 1000 : 0);
     hasScrobbledRef.current = false;
 
     try {
@@ -260,7 +323,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [client]);
 
+  useEffect(() => {
+    syncPlayerNotification();
+  }, [syncPlayerNotification]);
+
   const playTrack = useCallback(async (song: Song, newQueue?: Song[], index?: number) => {
+    setCurrentTrack(song);
+    setPosition(0);
+    setDuration(song.duration ? song.duration * 1000 : 0);
+    setIsPlaying(true);
+
     if (newQueue) {
       queueRef.current = newQueue;
       setQueue(newQueue);
@@ -353,9 +425,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [position, getActiveQueue, loadAndPlay]);
 
   const seekTo = useCallback(async (pos: number) => {
+    const nextPos = Math.max(0, pos);
     if (audioRef.current) {
-      audioRef.current.seekTo(pos / 1000);
+      audioRef.current.seekTo(nextPos / 1000);
     }
+    setPosition(nextPos);
   }, []);
 
   const toggleShuffle = useCallback(() => {
@@ -461,6 +535,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => {
       if (audioRef.current) {
         audioRef.current.destroy();
+      }
+      if (IS_ANDROID) {
+        Notifications.dismissNotificationAsync(PLAYER_NOTIFICATION_ID).catch(() => {});
       }
     };
   }, []);

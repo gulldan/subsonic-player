@@ -56,7 +56,7 @@ export default function StarredScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
-        <Text style={styles.title}>Favorites</Text>
+        <Text style={styles.title}>{t('library.starred')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -65,7 +65,7 @@ export default function StarredScreen() {
           <ActivityIndicator size="large" color={p.accent} />
         </View>
       ) : isEmpty ? (
-        <EmptyState icon="star-outline" message="No favorites yet. Star some music to see it here." />
+        <EmptyState icon="star-outline" message={t('common.noResults')} />
       ) : (
         <ScrollView
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
@@ -73,7 +73,7 @@ export default function StarredScreen() {
         >
           {artists.length > 0 ? (
             <View style={styles.section}>
-              <SectionHeader title="Artists" />
+              <SectionHeader title={t('search.artists')} />
               <FlatList
                 data={artists}
                 horizontal
@@ -95,7 +95,7 @@ export default function StarredScreen() {
 
           {albums.length > 0 ? (
             <View style={styles.section}>
-              <SectionHeader title="Albums" />
+              <SectionHeader title={t('search.albums')} />
               <FlatList
                 data={albums}
                 horizontal
@@ -111,7 +111,7 @@ export default function StarredScreen() {
 
           {songs.length > 0 ? (
             <View style={styles.section}>
-              <SectionHeader title="Songs" />
+              <SectionHeader title={t('search.songs')} />
               {songs.map((song, i) => (
                 <TrackItem
                   key={song.id}

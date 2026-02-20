@@ -14,10 +14,12 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold });
 
+  if (!fontsLoaded) return null;
+
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
 
   const handleCycleLanguage = () => {
-    const order: Array<'en' | 'ja' | 'ru'> = ['en', 'ja', 'ru'];
+    const order: ('en' | 'ja' | 'ru')[] = ['en', 'ja', 'ru'];
     const currentIdx = order.indexOf(locale);
     const nextLocale = order[(currentIdx + 1) % order.length];
     setLocale(nextLocale);

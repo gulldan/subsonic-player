@@ -80,18 +80,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const connect = useCallback(async (url: string, username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const config: ServerConfig = { url, username, password };
-      const newClient = new SubsonicClient(config);
-      const ok = await newClient.ping();
+      const inputUrl = url.trim().replace(/\/+$/, '');
+      const candidateUrls = /^https:\/\//i.test(inputUrl)
+        ? [inputUrl, inputUrl.replace(/^https:\/\//i, 'http://')]
+        : /^http:\/\//i.test(inputUrl)
+          ? [inputUrl]
+          : [`https://${inputUrl}`, `http://${inputUrl}`];
 
-      if (!ok) {
+      let selectedClient: SubsonicClient | null = null;
+      let selectedConfig: ServerConfig | null = null;
+
+      for (const candidate of candidateUrls) {
+        const config: ServerConfig = { url: candidate, username, password };
+        const testClient = new SubsonicClient(config);
+        const ok = await testClient.ping();
+        if (ok) {
+          selectedClient = testClient;
+          selectedConfig = config;
+          break;
+        }
+      }
+
+      if (!selectedClient || !selectedConfig) {
         setIsLoading(false);
         return false;
       }
 
       try {
         await Promise.all([
-          secureSet(STORE_KEYS.url, url),
+          secureSet(STORE_KEYS.url, selectedConfig.url),
           secureSet(STORE_KEYS.username, username),
           secureSet(STORE_KEYS.password, password),
         ]);
@@ -99,8 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn('AuthContext: SecureStore save failed (non-fatal):', storeErr?.message);
       }
 
-      clientRef.current = newClient;
-      setServerConfig(config);
+      clientRef.current = selectedClient;
+      setServerConfig(selectedConfig);
       setIsConnected(true);
       setIsLoading(false);
       return true;

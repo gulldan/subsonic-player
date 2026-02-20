@@ -28,6 +28,12 @@ export default function GenresScreen() {
   const genres = data?.genres?.genre ?? [];
   const sortedGenres = [...genres].sort((a, b) => a.value.localeCompare(b.value));
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const handleGenrePress = (genre: Genre) => {
+    router.push({
+      pathname: '/genre/[name]',
+      params: { name: encodeURIComponent(genre.value) },
+    } as any);
+  };
 
   return (
     <View style={styles.container}>
@@ -37,7 +43,7 @@ export default function GenresScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
-        <Text style={styles.title}>Genres</Text>
+        <Text style={styles.title}>{t('library.genres')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -52,7 +58,10 @@ export default function GenresScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={styles.genreRow}>
+            <Pressable
+              onPress={() => handleGenrePress(item)}
+              style={({ pressed }) => [styles.genreRow, pressed && { opacity: 0.7 }]}
+            >
               <Ionicons name="musical-notes" size={20} color={p.accent} />
               <View style={styles.genreInfo}>
                 <Text style={styles.genreName}>{item.value}</Text>
@@ -60,7 +69,8 @@ export default function GenresScreen() {
                   {item.albumCount} {item.albumCount === 1 ? 'album' : 'albums'} · {item.songCount} {item.songCount === 1 ? 'song' : 'songs'}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={18} color={p.textTertiary} />
+            </Pressable>
           )}
         />
       )}

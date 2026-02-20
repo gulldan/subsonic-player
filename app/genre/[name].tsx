@@ -1,47 +1,42 @@
-import { router, Stack } from 'expo-router';
+import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
-import { CoverArt } from '@/components/ui';
+import { AlbumCard, EmptyState } from '@/components/ui';
 import Colors from '@/constants/colors';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { Artist } from '@/lib/api/types';
+import type { Album } from '@/lib/api/types';
 
 const p = Colors.palette;
 
-export default function ArtistsScreen() {
+export default function GenreDetailScreen() {
+  const { name } = useLocalSearchParams<{ name: string }>();
   const { client } = useAuth();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold });
+
+  const encodedName = Array.isArray(name) ? name[0] : name;
+  const genreName = encodedName ? decodeURIComponent(encodedName) : '';
 
   const { data, isLoading } = useQuery({
-    queryKey: ['artists'],
-    queryFn: () => client!.getArtists(),
-    enabled: !!client,
+    queryKey: ['albums', 'byGenre', genreName],
+    queryFn: () => client!.getAlbumList2('byGenre', 100, 0, { genre: genreName }),
+    enabled: !!client && !!genreName,
   });
 
   if (!fontsLoaded) return null;
 
-  const artists: Artist[] = [];
-  if (data?.artists?.index) {
-    for (const idx of data.artists.index) {
-      if (idx.artist) {
-        artists.push(...idx.artist);
-      }
-    }
-  }
-
+  const albums = data?.albumList2?.album ?? [];
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
-  const numColumns = Math.floor(width / 120);
-  const itemSize = (width - 20 * 2 - (numColumns - 1) * 12) / numColumns;
+  const itemSize = (width - 48 - 16) / 2;
 
-  const handleArtistPress = (artist: Artist) => {
-    router.push(`/artist/${artist.id}`);
+  const handleAlbumPress = (album: Album) => {
+    router.push(`/album/${album.id}`);
   };
 
   return (
@@ -52,7 +47,7 @@ export default function ArtistsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
-        <Text style={styles.title}>{t('library.artists')}</Text>
+        <Text style={styles.title} numberOfLines={1}>{genreName || t('album.genre')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -60,23 +55,18 @@ export default function ArtistsScreen() {
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={p.accent} />
         </View>
+      ) : albums.length === 0 ? (
+        <EmptyState icon="musical-notes" message={t('common.noResults')} />
       ) : (
         <FlatList
-          data={artists}
-          numColumns={3}
-          key="artists-3"
+          data={albums}
+          numColumns={2}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100, gap: 24 }}
-          columnWrapperStyle={{ gap: 12 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100, gap: 20 }}
+          columnWrapperStyle={{ gap: 16 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() => handleArtistPress(item)}
-              style={({ pressed }) => [{ width: itemSize, alignItems: 'center' }, pressed && { opacity: 0.7 }]}
-            >
-              <CoverArt coverArtId={item.coverArt} size={itemSize - 8} borderRadius={(itemSize - 8) / 2} />
-              <Text style={styles.artistName} numberOfLines={2}>{item.name}</Text>
-            </Pressable>
+            <AlbumCard album={item} onPress={handleAlbumPress} size={itemSize} />
           )}
         />
       )}
@@ -112,12 +102,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  artistName: {
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    color: p.textPrimary,
-    textAlign: 'center',
-    marginTop: 8,
   },
 });

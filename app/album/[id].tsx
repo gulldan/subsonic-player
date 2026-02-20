@@ -1,7 +1,6 @@
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { usePlayer } from '@/lib/contexts/PlayerContext';
-import { useI18n } from '@/lib/i18n';
 import { CoverArt, TrackItem, formatDuration } from '@/components/ui';
 import Colors from '@/constants/colors';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +16,6 @@ export default function AlbumDetailScreen() {
   const { id } = useLocalSearchParams();
   const { client } = useAuth();
   const player = usePlayer();
-  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });

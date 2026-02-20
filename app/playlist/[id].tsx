@@ -4,10 +4,10 @@ import { usePlayer } from '@/lib/contexts/PlayerContext';
 import { useI18n } from '@/lib/i18n';
 import { CoverArt, TrackItem, formatDuration } from '@/components/ui';
 import Colors from '@/constants/colors';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Platform, useWindowDimensions, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -20,6 +20,7 @@ export default function PlaylistDetailScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const queryClient = useQueryClient();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
 
   const { data, isLoading } = useQuery({
@@ -53,6 +54,31 @@ export default function PlaylistDetailScreen() {
     player.playTrack(song, songs, idx >= 0 ? idx : 0);
   };
 
+  const handleDeletePlaylist = () => {
+    if (!client || !id) return;
+    Alert.alert(
+      t('playlist.deletePlaylist'),
+      t('playlist.confirmDelete'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await client.deletePlaylist(id as string);
+              await queryClient.invalidateQueries({ queryKey: ['playlists'] });
+              await queryClient.invalidateQueries({ queryKey: ['playlist', id] });
+              router.back();
+            } catch {
+              Alert.alert(t('common.error'), 'Failed to delete playlist');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -62,6 +88,12 @@ export default function PlaylistDetailScreen() {
         style={[styles.backBtn, { top: topPadding + 8 }]}
       >
         <Ionicons name="chevron-back" size={28} color={p.white} />
+      </Pressable>
+      <Pressable
+        onPress={handleDeletePlaylist}
+        style={[styles.deleteBtn, { top: topPadding + 8 }]}
+      >
+        <Ionicons name="trash-outline" size={20} color={p.white} />
       </Pressable>
 
       {isLoading ? (
@@ -124,6 +156,17 @@ const styles = StyleSheet.create({
   backBtn: {
     position: 'absolute',
     left: 12,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteBtn: {
+    position: 'absolute',
+    right: 12,
     zIndex: 10,
     width: 40,
     height: 40,

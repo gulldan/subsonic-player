@@ -27,6 +27,13 @@ export default function ArtistDetailScreen() {
     enabled: !!client && !!id,
   });
 
+  const artistName = artistData?.artist?.name;
+  const { data: topSongsData } = useQuery({
+    queryKey: ['topSongs', artistName],
+    queryFn: () => client!.getTopSongs(artistName as string, 10),
+    enabled: !!client && !!artistName,
+  });
+
   const { data: artistInfo } = useQuery({
     queryKey: ['artistInfo', id],
     queryFn: () => client!.getArtistInfo2(id as string),
@@ -40,14 +47,17 @@ export default function ArtistDetailScreen() {
   const bio = artistInfo?.artistInfo2?.biography;
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
 
-  const topSongs: Song[] = [];
+  const fallbackTopSongs: Song[] = [];
   for (const alb of albums) {
     if (alb.song) {
       for (const s of alb.song) {
-        if (topSongs.length < 5) topSongs.push(s);
+        if (fallbackTopSongs.length < 10) fallbackTopSongs.push(s);
       }
     }
   }
+  const topSongs = topSongsData?.topSongs?.song?.length
+    ? topSongsData.topSongs.song
+    : fallbackTopSongs;
 
   const handleAlbumPress = (album: Album) => {
     router.push(`/album/${album.id}`);
@@ -92,7 +102,7 @@ export default function ArtistDetailScreen() {
 
           {albums.length > 0 ? (
             <View style={styles.section}>
-              <SectionHeader title="Albums" />
+              <SectionHeader title={t('artist.albums')} />
               <FlatList
                 data={albums}
                 horizontal
@@ -108,7 +118,7 @@ export default function ArtistDetailScreen() {
 
           {topSongs.length > 0 ? (
             <View style={styles.section}>
-              <SectionHeader title="Top Songs" />
+              <SectionHeader title={t('artist.topSongs')} />
               {topSongs.map((song, i) => (
                 <TrackItem
                   key={song.id}

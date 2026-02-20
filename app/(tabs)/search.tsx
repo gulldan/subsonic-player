@@ -1,4 +1,4 @@
-import { View, Text, TextInput, ScrollView, FlatList, StyleSheet, Platform } from 'react-native';
+import { View, TextInput, ScrollView, FlatList, StyleSheet, Platform } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useI18n } from '@/lib/i18n';
@@ -69,6 +69,8 @@ export default function SearchScreen() {
   const albums = results?.album ?? [];
   const songs = results?.song ?? [];
   const hasResults = artists.length > 0 || albums.length > 0 || songs.length > 0;
+
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>

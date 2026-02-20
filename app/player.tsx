@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { router, Stack } from 'expo-router';
 import { usePlayer } from '@/lib/contexts/PlayerContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -15,6 +15,7 @@ const p = Colors.palette;
 
 export default function PlayerScreen() {
   const player = usePlayer();
+  const { seekTo } = player;
   const { client } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -24,38 +25,65 @@ export default function PlayerScreen() {
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPosition, setSeekPosition] = useState(0);
   const [isStarred, setIsStarred] = useState(!!player.currentTrack?.starred);
-  const sliderWidth = useRef(width - 64);
   const sliderRef = useRef<View>(null);
+  const sliderMetrics = useRef({ x: 0, width: width - 64 });
+
+  useEffect(() => {
+    setIsStarred(!!player.currentTrack?.starred);
+  }, [player.currentTrack?.id, player.currentTrack?.starred]);
+
+  const refreshSliderMetrics = useCallback(() => {
+    sliderRef.current?.measureInWindow((x, _y, measuredWidth) => {
+      sliderMetrics.current = {
+        x,
+        width: measuredWidth > 0 ? measuredWidth : sliderMetrics.current.width,
+      };
+    });
+  }, []);
 
   const onSliderLayout = useCallback((e: LayoutChangeEvent) => {
-    sliderWidth.current = e.nativeEvent.layout.width;
-  }, []);
+    sliderMetrics.current.width = e.nativeEvent.layout.width;
+    requestAnimationFrame(() => refreshSliderMetrics());
+  }, [refreshSliderMetrics]);
+
+  useEffect(() => {
+    sliderMetrics.current.width = width - 64;
+    requestAnimationFrame(() => refreshSliderMetrics());
+  }, [width, refreshSliderMetrics]);
+
+  const getSeekPositionFromPageX = useCallback((pageX: number) => {
+    if (player.duration <= 0) return 0;
+    const { x, width: measuredWidth } = sliderMetrics.current;
+    if (measuredWidth <= 0) return 0;
+    const localX = pageX - x;
+    const ratio = Math.max(0, Math.min(1, localX / measuredWidth));
+    return ratio * player.duration;
+  }, [player.duration]);
 
   const panResponder = useMemo(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (e) => {
+        refreshSliderMetrics();
         setIsSeeking(true);
-        const x = e.nativeEvent.locationX;
-        const ratio = Math.max(0, Math.min(1, x / sliderWidth.current));
-        setSeekPosition(ratio * player.duration);
+        setSeekPosition(getSeekPositionFromPageX(e.nativeEvent.pageX));
       },
       onPanResponderMove: (e) => {
-        const x = e.nativeEvent.locationX;
-        const ratio = Math.max(0, Math.min(1, x / sliderWidth.current));
-        setSeekPosition(ratio * player.duration);
+        setSeekPosition(getSeekPositionFromPageX(e.nativeEvent.pageX));
       },
       onPanResponderRelease: (e) => {
-        const x = e.nativeEvent.locationX;
-        const ratio = Math.max(0, Math.min(1, x / sliderWidth.current));
-        const finalPos = ratio * player.duration;
-        player.seekTo(finalPos);
+        const finalPos = getSeekPositionFromPageX(e.nativeEvent.pageX);
+        setSeekPosition(finalPos);
+        seekTo(finalPos);
         setIsSeeking(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       },
+      onPanResponderTerminate: () => {
+        setIsSeeking(false);
+      },
     }),
-    [player.duration]
+    [getSeekPositionFromPageX, refreshSliderMetrics, seekTo]
   );
 
   if (!fontsLoaded) return null;
@@ -109,6 +137,11 @@ export default function PlayerScreen() {
   const handleRepeat = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     player.toggleRepeat();
+  };
+
+  const handleOpenQueue = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/queue');
   };
 
   const handleStar = async () => {
@@ -211,8 +244,12 @@ export default function PlayerScreen() {
             color={isStarred ? p.accent : p.textTertiary}
           />
         </Pressable>
-        <Pressable style={styles.bottomBtn}>
-          <Ionicons name="list" size={24} color={p.textTertiary} />
+        <Pressable onPress={handleOpenQueue} style={styles.bottomBtn}>
+          <Ionicons
+            name="list"
+            size={24}
+            color={player.queue.length > 0 ? p.accent : p.textTertiary}
+          />
         </Pressable>
       </View>
     </View>
