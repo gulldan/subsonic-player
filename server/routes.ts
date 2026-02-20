@@ -27,6 +27,79 @@ function appendForwardedQueryParams(searchParams: URLSearchParams, query: Reques
   }
 }
 
+function serializeFormBody(body: unknown): string {
+  if (!body || typeof body !== 'object') return '';
+
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+    if (value === undefined || value === null) continue;
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== undefined && item !== null) {
+          searchParams.append(key, String(item));
+        }
+      }
+      continue;
+    }
+
+    searchParams.append(key, String(value));
+  }
+  return searchParams.toString();
+}
+
+function getForwardBody(req: Request): string | Buffer | undefined {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return undefined;
+  }
+
+  const contentType = req.header('content-type')?.toLowerCase() ?? '';
+  if (contentType.includes('application/json')) {
+    if (Buffer.isBuffer(req.rawBody)) {
+      return req.rawBody as Buffer;
+    }
+    if (req.body !== undefined) {
+      return JSON.stringify(req.body);
+    }
+    return undefined;
+  }
+
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    if (typeof req.body === 'string') {
+      return req.body;
+    }
+    return serializeFormBody(req.body);
+  }
+
+  if (Buffer.isBuffer(req.rawBody)) {
+    return req.rawBody as Buffer;
+  }
+
+  if (typeof req.body === 'string') {
+    return req.body;
+  }
+
+  return undefined;
+}
+
+function getForwardHeaders(req: Request, hasBody: boolean): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const accept = req.header('accept');
+  if (accept) headers.Accept = accept;
+
+  const range = req.header('range');
+  if (range) headers.Range = range;
+
+  if (hasBody) {
+    const contentType = req.header('content-type');
+    if (contentType) {
+      headers['Content-Type'] = contentType;
+    }
+  }
+
+  return headers;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.all('/api/subsonic/:endpoint', async (req, res) => {
     try {
@@ -42,19 +115,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       appendForwardedQueryParams(searchParams, req.query);
 
       const targetUrl = `${normalizeServerUrl(serverUrl)}/rest/${endpoint}?${searchParams.toString()}`;
+      const body = getForwardBody(req);
+      const forwardBody = body as BodyInit | undefined;
       const response = await fetch(targetUrl, {
         method: req.method,
-        headers: {
-          Accept: req.headers.accept ?? '*/*',
-        },
+        headers: getForwardHeaders(req, body !== undefined),
+        body: forwardBody,
+      });
+
+      response.headers.forEach((value, key) => {
+        res.setHeader(key, value);
       });
 
       const contentType = response.headers.get('content-type') ?? '';
-      if (contentType) {
-        res.setHeader('Content-Type', contentType);
-      }
-
-      if (contentType.includes('image') || contentType.includes('audio') || contentType.includes('octet-stream')) {
+      if (
+        contentType.includes('image') ||
+        contentType.includes('audio') ||
+        contentType.includes('video') ||
+        contentType.includes('octet-stream')
+      ) {
         const buffer = Buffer.from(await response.arrayBuffer());
         return res.status(response.status).send(buffer);
       }

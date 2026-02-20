@@ -13,7 +13,11 @@
     "start": "bunx expo start",
     "lint": "bunx biome check --fix .",
     "format": "bunx biome format --write .",
-    "check": "bunx biome check . && bunx tsc --noEmit"
+    "typecheck": "bunx tsc --noEmit",
+    "check:ast": "bun scripts/check-ast.ts",
+    "coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage",
+    "check:coverage": "bun run coverage && bun scripts/check-coverage.ts 80 80",
+    "check": "bunx biome check . && bun run typecheck && bun run check:ast"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -26,7 +30,6 @@
     "drizzle-zod": "^0.8.3",
     "expo": "~54.0.33",
     "expo-audio": "^1.1.1",
-    "expo-av": "^16.0.8",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
     "expo-crypto": "^15.0.8",

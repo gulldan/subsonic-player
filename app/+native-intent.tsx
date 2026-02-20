@@ -1,3 +1,1 @@
-export function redirectSystemPath(_props: { path: string; initial: boolean }) {
-  return '/';
-}
+export { redirectSystemPath } from '@/features/system/routing/nativeIntent';
