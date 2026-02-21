@@ -39,3 +39,15 @@ yarn-error.*
 .vercel
 
 .env
+
+# build artifacts
+server_dist/
+static-build/
+
+# test artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# lighthouse
+.lighthouseci/

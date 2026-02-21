@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{ts,tsx,js,jsx,json}"
+      run: bun run biome:fix
+
+    - name: typecheck
+      run: bun run typecheck
+
+pre-push:
+  jobs:
+    - name: verify
+      run: bun run verify
