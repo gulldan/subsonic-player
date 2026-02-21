@@ -9,6 +9,13 @@ pre-commit:
       run: bun run typecheck
 
 pre-push:
+  parallel: true
   jobs:
-    - name: verify
-      run: bun run verify
+    - name: biome
+      run: bun run biome:ci
+
+    - name: typecheck
+      run: bun run typecheck
+
+    - name: check-ast
+      run: bun run check:ast
