@@ -31,23 +31,44 @@ export function PlayerPrimaryControls({
 }: PlayerPrimaryControlsProps) {
   return (
     <View style={styles.controls}>
-      <Pressable onPress={onShuffle} style={[styles.modeBtn, isShuffled && styles.modeBtnActive]}>
+      <Pressable
+        onPress={onShuffle}
+        style={[styles.modeBtn, isShuffled && styles.modeBtnActive]}
+        accessibilityLabel={isShuffled ? 'Disable shuffle' : 'Enable shuffle'}
+        accessibilityRole="button"
+      >
         <Ionicons name="shuffle" size={22} color={isShuffled ? PLAYER_ACCENT : p.textTertiary} />
       </Pressable>
-      <Pressable onPress={onPrevious} style={styles.controlBtn}>
+      <Pressable
+        onPress={onPrevious}
+        style={styles.controlBtn}
+        accessibilityLabel="Previous track"
+        accessibilityRole="button"
+      >
         <Ionicons name="play-skip-back" size={30} color={p.white} />
       </Pressable>
-      <Pressable onPress={onPlayPause} style={styles.playPauseBtn} disabled={isLoading}>
+      <Pressable
+        onPress={onPlayPause}
+        style={styles.playPauseBtn}
+        disabled={isLoading}
+        accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+        accessibilityRole="button"
+      >
         {isLoading ? (
           <ActivityIndicator size="large" color={p.black} />
         ) : (
           <Ionicons name={isPlaying ? 'pause' : 'play'} size={34} color={p.black} />
         )}
       </Pressable>
-      <Pressable onPress={onNext} style={styles.controlBtn}>
+      <Pressable onPress={onNext} style={styles.controlBtn} accessibilityLabel="Next track" accessibilityRole="button">
         <Ionicons name="play-skip-forward" size={30} color={p.white} />
       </Pressable>
-      <Pressable onPress={onRepeat} style={[styles.modeBtn, repeatMode !== 'off' && styles.modeBtnActive]}>
+      <Pressable
+        onPress={onRepeat}
+        style={[styles.modeBtn, repeatMode !== 'off' && styles.modeBtnActive]}
+        accessibilityLabel={`Repeat ${repeatMode}`}
+        accessibilityRole="button"
+      >
         <View>
           <Ionicons name="repeat" size={22} color={repeatMode !== 'off' ? PLAYER_ACCENT : p.textTertiary} />
           {repeatMode === 'one' ? (

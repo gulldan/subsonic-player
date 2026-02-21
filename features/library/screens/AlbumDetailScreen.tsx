@@ -61,7 +61,12 @@ export default function AlbumDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Pressable onPress={() => router.back()} style={[styles.backBtn, { top: topPadding + 8 }]}>
+      <Pressable
+        onPress={() => router.back()}
+        style={[styles.backBtn, { top: topPadding + 8 }]}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+      >
         <Ionicons name="chevron-back" size={28} color={p.white} />
       </Pressable>
 

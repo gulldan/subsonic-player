@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { FlatList, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { openAlbum, openArtist } from '@/features/library/application/navigation';
 import { createTrackPressHandler } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
 import type { SearchResult3 } from '@/shared/api/subsonic/types';
+import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { AlbumCard, ArtistCard, EmptyState, SectionHeader, TrackList } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
+import { openAlbum, openArtist } from '@/shared/navigation/navigation';
 import Colors from '@/shared/theme/colors';
 
 const p = Colors.palette;
@@ -109,6 +110,7 @@ export default function SearchScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
                 scrollEnabled={artists.length > 0}
+                {...HORIZONTAL_LIST_PROPS}
               />
             </View>
           )}
@@ -128,6 +130,7 @@ export default function SearchScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
                 scrollEnabled={albums.length > 0}
+                {...HORIZONTAL_LIST_PROPS}
               />
             </View>
           )}

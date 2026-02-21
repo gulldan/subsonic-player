@@ -46,6 +46,12 @@ bun run start
 - Avoid circular dependencies across features.
 - Keep `app/*` wrappers stable and logic-free.
 
+### Accepted cross-feature imports
+These modules are used across multiple features and are explicitly allowed:
+- `features/player` (`usePlayer`, `trackListPlayback`) — allowed from any feature.
+- `features/auth` (`useAuth`) — allowed from any feature.
+- All other cross-feature imports must be moved to `shared/`.
+
 ## Feature Structure Standard
 For feature modules, keep this split when applicable:
 - `screens/`: route-level composition.
@@ -104,14 +110,44 @@ Extending player actions (favorite/dislike/bookmark/share/random/queue):
 - Coverage target: `>= 80%` lines and functions (enforced by script).
 - AST duplication gate must stay green; investigate and refactor repeated large function bodies.
 
+## Mandatory Design Principles
+
+Every change must be checked against these three principles. Violations block merge.
+
+### FSD (Feature-Sliced Design)
+- Strictly follow the layering contract: `app → features → shared`. No exceptions.
+- `shared/` must never import from `features/` or `app/`.
+- Cross-feature imports are forbidden unless listed in "Accepted cross-feature imports".
+- New reusable logic (utilities, navigation helpers, UI primitives) goes to `shared/`, not into a feature.
+- Keep feature boundaries clean: a feature must not reach into another feature's internals.
+- When adding code, always ask: "Does this belong to a feature, or is it cross-cutting?" — if cross-cutting, place it in `shared/`.
+
+### Pixel-Perfect UI
+- Use spacing tokens from `shared/theme/spacing.ts` (`Spacing`, `SCREEN_PADDING_H`, `CONTENT_GAP`, `SECTION_PADDING`). No magic numbers for padding/margin/gap.
+- Use color tokens from `shared/theme/colors.ts`. No hardcoded color literals.
+- Touch targets must be `>= 44x44`.
+- Every interactive element must have `accessibilityLabel` and `accessibilityRole`.
+- Maintain visual consistency: same spacing, radius, font sizes across similar components.
+- Loading, error, and empty states must be explicit — never a blank screen.
+
+### FE Performance
+- All `FlatList` instances must spread `VERTICAL_LIST_PROPS` or `HORIZONTAL_LIST_PROPS` from `shared/components/lists/flatListProps.ts`.
+- Use `memo()` for list item components and any component rendered inside a FlatList `renderItem`.
+- Avoid inline object/array/function creation in render paths (styles, callbacks) — extract to `const`, `useMemo`, or `useCallback`.
+- Use `keyExtractor` on every FlatList.
+- Prefer `Image` from `expo-image` with `cachePolicy="memory-disk"` over React Native `Image`.
+- Avoid unnecessary re-renders: keep context providers narrow, split state where possible.
+
 ## Definition of Done
 A change is done only if:
-1. Architecture/layering rules are respected.
-2. `bun run check` passes.
-3. `bun run check:coverage` passes.
-4. `bun test --reporter=dot` passes.
-5. New behavior includes tests (or explicit documented exception).
-6. `API_REVIEW.md` is updated when API support or UI wiring status changes.
+1. Architecture/layering rules are respected (FSD).
+2. UI follows spacing/color tokens and accessibility requirements (Pixel-Perfect).
+3. Lists and render paths are optimized (FE Performance).
+4. `bun run check` passes.
+5. `bun run check:coverage` passes.
+6. `bun test --reporter=dot` passes.
+7. New behavior includes tests (or explicit documented exception).
+8. `API_REVIEW.md` is updated when API support or UI wiring status changes.
 
 ## Refactoring Policy
 - Prefer incremental refactors with passing checks at each step.

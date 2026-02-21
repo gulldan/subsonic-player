@@ -38,8 +38,8 @@ mock.module('@tanstack/react-query', () => ({
 mock.module('@/shared/theme/colors', () => ({
   default: { palette: {} },
 }));
-mock.module('@/features/auth/contexts/AuthContext', () => ({
-  useAuth: () => ({ client: null }),
+mock.module('@/shared/components/media/CoverArtContext', () => ({
+  useCoverArtUrl: () => null,
 }));
 mock.module('@/features/player/core/presentation/PlayerProvider', () => ({
   usePlayer: () => ({}),

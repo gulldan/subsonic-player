@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { openAlbum } from '@/features/library/application/navigation';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { createAlbumCardRenderItem } from '@/shared/components/media/renderers';
 import { EmptyState } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
@@ -52,7 +53,12 @@ export default function GenreDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title} numberOfLines={1}>
@@ -76,6 +82,7 @@ export default function GenreDetailScreen() {
           columnWrapperStyle={{ gap: 16 }}
           showsVerticalScrollIndicator={false}
           renderItem={renderAlbumGridItem}
+          {...VERTICAL_LIST_PROPS}
         />
       )}
     </View>

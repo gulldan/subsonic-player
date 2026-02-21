@@ -24,6 +24,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { Playlist } from '@/shared/api/subsonic/types';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { CoverArt, formatDuration } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
@@ -91,7 +92,12 @@ export default function PlaylistsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>Playlists</Text>
@@ -110,6 +116,7 @@ export default function PlaylistsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
+          {...VERTICAL_LIST_PROPS}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => handlePlaylistPress(item)}

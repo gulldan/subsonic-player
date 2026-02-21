@@ -15,6 +15,7 @@ import { openAlbum } from '@/features/library/application/navigation';
 import { createTrackPressHandler } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
 import type { Song } from '@/shared/api/subsonic/types';
+import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { createAlbumCardRenderItem } from '@/shared/components/media/renderers';
 import { CoverArt, SectionHeader, TrackList } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
@@ -72,7 +73,12 @@ export default function ArtistDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Pressable onPress={() => router.back()} style={[styles.backBtn, { top: topPadding + 8 }]}>
+      <Pressable
+        onPress={() => router.back()}
+        style={[styles.backBtn, { top: topPadding + 8 }]}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+      >
         <Ionicons name="chevron-back" size={28} color={p.white} />
       </Pressable>
 
@@ -110,6 +116,7 @@ export default function ArtistDetailScreen() {
                 contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
                 keyExtractor={(item) => item.id}
                 renderItem={renderAlbumRailItem}
+                {...HORIZONTAL_LIST_PROPS}
               />
             </View>
           ) : null}

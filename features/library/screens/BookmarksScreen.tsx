@@ -12,12 +12,13 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { formatDateTime } from '@/features/library/application/formatDateTime';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
 import type { Bookmark, Song } from '@/shared/api/subsonic/types';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { CoverArt, EmptyState, formatDuration } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import { formatDateTime } from '@/shared/utils/formatDateTime';
 
 const p = Colors.palette;
 
@@ -88,7 +89,12 @@ export default function BookmarksScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('library.bookmarks')}</Text>
@@ -113,6 +119,7 @@ export default function BookmarksScreen() {
           keyExtractor={(item) => item.entry?.id ?? `${item.position}`}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
+          {...VERTICAL_LIST_PROPS}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => void handlePlayBookmark(item)}

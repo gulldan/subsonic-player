@@ -6,9 +6,9 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { formatDateTime } from '@/features/library/application/formatDateTime';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import { formatDateTime } from '@/shared/utils/formatDateTime';
 
 const p = Colors.palette;
 

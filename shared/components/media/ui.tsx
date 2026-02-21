@@ -18,9 +18,10 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { Album, Artist, Song } from '@/shared/api/subsonic/types';
+import { useCoverArtUrl } from '@/shared/components/media/CoverArtContext';
 import Colors from '@/shared/theme/colors';
+import { CONTENT_GAP, SCREEN_PADDING_H, Spacing } from '@/shared/theme/spacing';
 
 const p = Colors.palette;
 
@@ -49,7 +50,7 @@ export const CoverArt = memo(function CoverArt({
   size: number;
   borderRadius?: number;
 }) {
-  const { client } = useAuth();
+  const getCoverArtUrl = useCoverArtUrl();
   const [hasError, setHasError] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset error state when coverArtId prop changes
@@ -58,7 +59,7 @@ export const CoverArt = memo(function CoverArt({
   }, [coverArtId]);
 
   const requestSize = Math.ceil(size * PixelRatio.get());
-  const url = coverArtId && client ? client.getCoverArtUrl(coverArtId, requestSize) : null;
+  const url = coverArtId && getCoverArtUrl ? getCoverArtUrl(coverArtId, requestSize) : null;
 
   if (!url || hasError) {
     return (
@@ -104,6 +105,8 @@ export const TrackItem = memo(function TrackItem({
       hitSlop={4}
       unstable_pressDelay={0}
       style={({ pressed }) => [styles.trackRow, pressed && PRESSED_ROW]}
+      accessibilityLabel={`${song.title} by ${song.artist ?? 'unknown artist'}`}
+      accessibilityRole="button"
     >
       {showArt ? (
         <CoverArt coverArtId={song.coverArt} size={40} borderRadius={6} />
@@ -162,7 +165,12 @@ export function AlbumCard({
   size?: number;
 }) {
   return (
-    <Pressable onPress={() => onPress(album)} style={({ pressed }) => [{ width: size }, pressed && PRESSED_CARD]}>
+    <Pressable
+      onPress={() => onPress(album)}
+      style={({ pressed }) => [{ width: size }, pressed && PRESSED_CARD]}
+      accessibilityLabel={`${album.name} by ${album.artist ?? 'unknown artist'}`}
+      accessibilityRole="button"
+    >
       <CoverArt coverArtId={album.coverArt} size={size} borderRadius={12} />
       <Text style={styles.albumName} numberOfLines={2}>
         {album.name}
@@ -176,7 +184,12 @@ export function AlbumCard({
 
 export function ArtistCard({ artist, onPress }: { artist: Artist; onPress: (artist: Artist) => void }) {
   return (
-    <Pressable onPress={() => onPress(artist)} style={({ pressed }) => [styles.artistCard, pressed && PRESSED_CARD]}>
+    <Pressable
+      onPress={() => onPress(artist)}
+      style={({ pressed }) => [styles.artistCard, pressed && PRESSED_CARD]}
+      accessibilityLabel={artist.name}
+      accessibilityRole="button"
+    >
       <CoverArt coverArtId={artist.coverArt} size={80} borderRadius={40} />
       <Text style={styles.artistName} numberOfLines={1}>
         {artist.name}
@@ -198,7 +211,7 @@ export function SectionHeader({
     <View style={styles.sectionRow}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {onSeeAll ? (
-        <Pressable onPress={onSeeAll}>
+        <Pressable onPress={onSeeAll} accessibilityLabel={`${seeAllText} ${title}`} accessibilityRole="button">
           <Text style={styles.seeAllText}>{seeAllText}</Text>
         </Pressable>
       ) : null}
@@ -266,8 +279,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingHorizontal: Spacing.lg,
+    gap: CONTENT_GAP,
   },
   trackIndex: {
     width: 28,
@@ -302,7 +315,7 @@ const styles = StyleSheet.create({
     color: p.textPrimary,
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   albumArtist: {
     color: p.textSecondary,
@@ -318,15 +331,15 @@ const styles = StyleSheet.create({
     color: p.textPrimary,
     fontSize: 12,
     fontFamily: 'Inter_500Medium',
-    marginTop: 8,
+    marginTop: Spacing.sm,
     textAlign: 'center',
   },
   sectionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingHorizontal: SCREEN_PADDING_H,
+    marginBottom: CONTENT_GAP,
   },
   sectionTitle: {
     color: p.white,
@@ -342,8 +355,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    padding: 32,
+    gap: CONTENT_GAP,
+    padding: Spacing.xxxl,
   },
   emptyMessage: {
     color: p.textTertiary,

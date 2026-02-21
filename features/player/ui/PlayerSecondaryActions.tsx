@@ -30,7 +30,13 @@ export function PlayerSecondaryActions({ actions }: { actions: PlayerSecondaryAc
         ];
 
         return (
-          <Pressable key={action.key} onPress={action.onPress} style={[styles.bottomBtn, action.active && activeStyle]}>
+          <Pressable
+            key={action.key}
+            onPress={action.onPress}
+            style={[styles.bottomBtn, action.active && activeStyle]}
+            accessibilityLabel={action.key}
+            accessibilityRole="button"
+          >
             <Ionicons name={action.icon} size={22} color={iconColor} />
           </Pressable>
         );

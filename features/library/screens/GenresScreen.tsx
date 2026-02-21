@@ -12,6 +12,7 @@ import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, Vie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { Genre } from '@/shared/api/subsonic/types';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
 
@@ -43,7 +44,12 @@ export default function GenresScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('library.genres')}</Text>
@@ -60,6 +66,7 @@ export default function GenresScreen() {
           keyExtractor={(item) => item.value}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
+          {...VERTICAL_LIST_PROPS}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => handleGenrePress(item)}

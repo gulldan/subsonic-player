@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { FlatList, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { openAlbum } from '@/features/library/application/navigation';
 import type { Album } from '@/shared/api/subsonic/types';
+import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { AlbumCard, SectionHeader, Shimmer } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
+import { openAlbum } from '@/shared/navigation/navigation';
 import Colors from '@/shared/theme/colors';
 
 const p = Colors.palette;
@@ -81,6 +82,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               scrollEnabled={randomAlbums.length > 0}
+              {...HORIZONTAL_LIST_PROPS}
             />
           )}
         </View>
@@ -98,6 +100,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               scrollEnabled={newestAlbums.length > 0}
+              {...HORIZONTAL_LIST_PROPS}
             />
           )}
         </View>
@@ -115,6 +118,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               scrollEnabled={frequentAlbums.length > 0}
+              {...HORIZONTAL_LIST_PROPS}
             />
           )}
         </View>

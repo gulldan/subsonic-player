@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { openArtist } from '@/features/library/application/navigation';
 import type { Artist } from '@/shared/api/subsonic/types';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { CoverArt } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
@@ -61,7 +62,12 @@ export default function ArtistsScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('library.artists')}</Text>
@@ -81,6 +87,7 @@ export default function ArtistsScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100, gap: 24 }}
           columnWrapperStyle={{ gap: 12 }}
           showsVerticalScrollIndicator={false}
+          {...VERTICAL_LIST_PROPS}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => openArtist(item)}

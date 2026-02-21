@@ -22,11 +22,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { formatDateTime } from '@/features/library/application/formatDateTime';
 import type { Share as SubsonicShare } from '@/shared/api/subsonic/types';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { EmptyState } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import { formatDateTime } from '@/shared/utils/formatDateTime';
 
 const p = Colors.palette;
 
@@ -94,7 +95,12 @@ export default function SharesScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('library.shares')}</Text>
@@ -119,6 +125,7 @@ export default function SharesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
+          {...VERTICAL_LIST_PROPS}
           renderItem={({ item }) => (
             <View style={styles.rowWrap}>
               <Pressable

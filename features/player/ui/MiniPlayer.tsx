@@ -62,7 +62,12 @@ export const MiniPlayer = memo(function MiniPlayer({
         <View style={[styles.miniProgressFill, { width: `${progress * 100}%` }]} />
       </View>
 
-      <Pressable onPress={onPress} style={styles.miniPlayerContent}>
+      <Pressable
+        onPress={onPress}
+        style={styles.miniPlayerContent}
+        accessibilityLabel="Open player"
+        accessibilityRole="button"
+      >
         <CoverArt coverArtId={currentTrack.coverArt} size={48} borderRadius={8} />
         <View style={styles.miniPlayerInfo}>
           <Text style={styles.miniPlayerTitle} numberOfLines={1}>
@@ -74,7 +79,12 @@ export const MiniPlayer = memo(function MiniPlayer({
         </View>
       </Pressable>
 
-      <Pressable onPress={handleStar} style={styles.miniPlayerBtn}>
+      <Pressable
+        onPress={handleStar}
+        style={styles.miniPlayerBtn}
+        accessibilityLabel={isStarred ? 'Remove from favorites' : 'Add to favorites'}
+        accessibilityRole="button"
+      >
         <Ionicons
           name={isStarred ? 'heart' : 'heart-outline'}
           size={22}
@@ -82,11 +92,22 @@ export const MiniPlayer = memo(function MiniPlayer({
         />
       </Pressable>
 
-      <Pressable onPress={handlePrevious} style={styles.miniPlayerBtn}>
+      <Pressable
+        onPress={handlePrevious}
+        style={styles.miniPlayerBtn}
+        accessibilityLabel="Previous track"
+        accessibilityRole="button"
+      >
         <Ionicons name="play-back" size={20} color={p.textSecondary} />
       </Pressable>
 
-      <Pressable onPress={handlePlayPause} style={styles.miniPlayPauseBtn} disabled={isLoading}>
+      <Pressable
+        onPress={handlePlayPause}
+        style={styles.miniPlayPauseBtn}
+        disabled={isLoading}
+        accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+        accessibilityRole="button"
+      >
         {isLoading ? (
           <ActivityIndicator size="small" color={p.white} />
         ) : (
@@ -94,7 +115,12 @@ export const MiniPlayer = memo(function MiniPlayer({
         )}
       </Pressable>
 
-      <Pressable onPress={handleNext} style={styles.miniPlayerBtn}>
+      <Pressable
+        onPress={handleNext}
+        style={styles.miniPlayerBtn}
+        accessibilityLabel="Next track"
+        accessibilityRole="button"
+      >
         <Ionicons name="play-forward" size={20} color={p.textSecondary} />
       </Pressable>
     </Animated.View>

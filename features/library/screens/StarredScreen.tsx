@@ -14,6 +14,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { openAlbum, openArtist } from '@/features/library/application/navigation';
 import { createTrackPressHandler } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
+import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { createAlbumCardRenderItem } from '@/shared/components/media/renderers';
 import { CoverArt, EmptyState, SectionHeader, TrackList } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
@@ -51,7 +52,12 @@ export default function StarredScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('library.starred')}</Text>
@@ -75,6 +81,7 @@ export default function StarredScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
                 keyExtractor={(item) => item.id}
+                {...HORIZONTAL_LIST_PROPS}
                 renderItem={({ item }) => (
                   <Pressable
                     onPress={() => openArtist(item)}
@@ -100,6 +107,7 @@ export default function StarredScreen() {
                 contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
                 keyExtractor={(item) => item.id}
                 renderItem={renderAlbumRailItem}
+                {...HORIZONTAL_LIST_PROPS}
               />
             </View>
           ) : null}

@@ -3,15 +3,16 @@ import * as Notifications from 'expo-notifications';
 import { router, Stack, usePathname, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { type ReactNode, useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AuthProvider } from '@/features/auth/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/features/auth/contexts/AuthContext';
 import { PlayerProvider } from '@/features/player/core/presentation/PlayerProvider';
 import { MiniPlayer } from '@/features/player/ui/MiniPlayer';
 import { ErrorBoundary } from '@/shared/components/error/ErrorBoundary';
+import { CoverArtProvider } from '@/shared/components/media/CoverArtContext';
 import { I18nProvider } from '@/shared/i18n';
 import { queryClient } from '@/shared/query/client';
 import Colors from '@/shared/theme/colors';
@@ -27,6 +28,15 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+
+function CoverArtBridge({ children }: { children: ReactNode }) {
+  const { client } = useAuth();
+  const getCoverArtUrl = useCallback(
+    (id: string, size: number) => (client ? client.getCoverArtUrl(id, size) : ''),
+    [client],
+  );
+  return <CoverArtProvider getCoverArtUrl={getCoverArtUrl}>{children}</CoverArtProvider>;
+}
 
 function RootLayoutNav() {
   const insets = useSafeAreaInsets();
@@ -80,13 +90,15 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <AuthProvider>
-            <PlayerProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </PlayerProvider>
+            <CoverArtBridge>
+              <PlayerProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </PlayerProvider>
+            </CoverArtBridge>
           </AuthProvider>
         </I18nProvider>
       </QueryClientProvider>
