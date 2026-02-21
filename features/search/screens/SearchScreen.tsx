@@ -14,9 +14,9 @@ import { openAlbum, openArtist } from '@/shared/navigation/navigation';
 import Colors from '@/shared/theme/colors';
 import {
   HEADER_TOP_GAP_LG,
+  MIN_TOUCH_TARGET,
   SCREEN_PADDING_H,
   SCROLL_BOTTOM_INSET,
-  SEARCH_INPUT_HEIGHT,
   Spacing,
   WEB_HEADER_OFFSET,
 } from '@/shared/theme/spacing';
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: p.surface,
     borderRadius: 12,
     paddingHorizontal: Spacing.md,
-    height: SEARCH_INPUT_HEIGHT,
+    height: MIN_TOUCH_TARGET,
   },
   searchIcon: {
     marginRight: Spacing.sm,

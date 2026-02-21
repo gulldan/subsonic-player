@@ -1,52 +1,5 @@
-import { describe, expect, mock, test } from 'bun:test';
-
-// Mock native dependencies before importing
-mock.module('react-native', () => ({
-  ActivityIndicator: () => null,
-  Platform: { OS: 'ios' },
-  PixelRatio: { get: () => 2 },
-  Pressable: () => null,
-  StyleSheet: { create: (s: Record<string, unknown>) => s },
-  Text: () => null,
-  View: () => null,
-}));
-mock.module('react-native-reanimated', () => ({
-  default: { View: () => null },
-  SlideInDown: { duration: () => ({}) },
-  useAnimatedStyle: () => ({}),
-  useSharedValue: () => ({ value: 0 }),
-  withRepeat: () => 0,
-  withSequence: () => 0,
-  withTiming: () => 0,
-}));
-mock.module('@expo/vector-icons', () => ({
-  Ionicons: () => null,
-}));
-mock.module('expo-image', () => ({
-  Image: () => null,
-}));
-mock.module('expo-linear-gradient', () => ({
-  LinearGradient: () => null,
-}));
-mock.module('expo-haptics', () => ({
-  impactAsync: async () => {},
-  ImpactFeedbackStyle: { Light: 'light' },
-}));
-mock.module('@tanstack/react-query', () => ({
-  useQueryClient: () => ({}),
-}));
-mock.module('@/shared/theme/colors', () => ({
-  default: { palette: {} },
-}));
-mock.module('@/shared/components/media/CoverArtContext', () => ({
-  useCoverArtUrl: () => null,
-}));
-mock.module('@/features/player/core/presentation/PlayerProvider', () => ({
-  usePlayer: () => ({}),
-  usePlayerPosition: () => 0,
-}));
-
-const { formatDuration } = await import('../ui');
+import { describe, expect, test } from 'bun:test';
+import { formatDuration } from '../formatDuration';
 
 describe('formatDuration', () => {
   describe('milliseconds (default)', () => {

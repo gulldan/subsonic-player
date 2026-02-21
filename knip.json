@@ -1,24 +1,25 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["app/**/*.{ts,tsx}", "scripts/*.{ts,js}"],
+  "entry": ["app/**/*.{ts,tsx}", "scripts/*.{ts,js}", "**/__tests__/**/*.test.{ts,tsx}", "tests/**/*.{ts,tsx,spec.ts}"],
   "project": [
     "app/**/*.{ts,tsx}",
     "features/**/*.{ts,tsx}",
     "shared/**/*.{ts,tsx}",
     "server/**/*.ts",
-    "scripts/**/*.{ts,js}"
+    "scripts/**/*.{ts,js}",
+    "tests/**/*.{ts,tsx}"
   ],
-  "ignore": ["drizzle.config.ts"],
+  "bun": true,
   "drizzle": false,
   "ignoreDependencies": [
-    "drizzle-kit",
     "drizzle-orm",
     "drizzle-zod",
     "@expo/ngrok",
     "@stardazed/streams-text-encoding",
     "@ungap/structured-clone",
     "babel-plugin-react-compiler",
-    "expo-*",
-    "react-native-*"
+    "babel-preset-expo",
+    "expo-.+",
+    "react-native-.+"
   ]
 }

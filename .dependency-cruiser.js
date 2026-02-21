@@ -62,13 +62,16 @@ module.exports = {
     doNotFollow: {
       path: 'node_modules',
     },
+    exclude: {
+      path: ['__tests__', '\\.test\\.', '\\.spec\\.', 'tests/'],
+    },
     tsConfig: {
       fileName: 'tsconfig.json',
     },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
-      conditionNames: ['import', 'require', 'node', 'default'],
-      mainFields: ['main', 'types', 'typings'],
+      conditionNames: ['import', 'require', 'browser', 'default'],
+      mainFields: ['module', 'main', 'types', 'typings'],
     },
     reporterOptions: {
       dot: {

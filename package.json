@@ -19,7 +19,7 @@
     "biome:ci": "bunx biome ci .",
     "typecheck": "bunx tsc --noEmit",
     "check:ast": "bun scripts/check-ast.ts",
-    "coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage",
+    "coverage": "bun test features shared --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage",
     "check:coverage": "bun run coverage && bun scripts/check-coverage.ts 80 80",
     "check": "bunx biome check . && bun run typecheck && bun run check:ast",
     "knip": "bunx knip",
@@ -63,7 +63,6 @@
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
     "express": "^5.2.1",
-    "pg": "^8.18.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -75,10 +74,7 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.2",
     "react-native-worklets": "0.5.1",
-    "tsx": "^4.21.0",
-    "ws": "^8.19.0",
-    "zod": "^4.3.6",
-    "zod-validation-error": "^5.0.0"
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
@@ -97,16 +93,22 @@
     "knip": "^5.84.1",
     "lefthook": "^2.1.1",
     "size-limit": "^12.0.0",
+    "esbuild": "^0.25.1",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "minimatch": ">=10.2.1",
+    "tmp": ">=0.2.4",
+    "esbuild": ">=0.25.1"
   },
   "size-limit": [
     {
       "path": "server/index.ts",
-      "limit": "50 kB"
+      "limit": "10 kB"
     },
     {
       "path": "shared/api/subsonic/subsonic.ts",
-      "limit": "30 kB"
+      "limit": "15 kB"
     }
   ],
   "private": true

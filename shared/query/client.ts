@@ -26,23 +26,8 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(method: string, route: string, data?: unknown | undefined): Promise<Response> {
-  const baseUrl = getApiUrl();
-  const url = new URL(route, baseUrl);
-
-  const res = await fetch(url.toString(), {
-    method,
-    headers: data ? { 'Content-Type': 'application/json' } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: 'include',
-  });
-
-  await throwIfResNotOk(res);
-  return res;
-}
-
 type UnauthorizedBehavior = 'returnNull' | 'throw';
-export const getQueryFn: <T>(options: { on401: UnauthorizedBehavior }) => QueryFunction<T> =
+const getQueryFn: <T>(options: { on401: UnauthorizedBehavior }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const baseUrl = getApiUrl();

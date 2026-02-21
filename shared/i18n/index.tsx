@@ -120,6 +120,3 @@ export function useI18n() {
   }
   return context;
 }
-
-export { I18nContext };
-export type { Locale, Translations };

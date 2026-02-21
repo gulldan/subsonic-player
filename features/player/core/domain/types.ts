@@ -2,8 +2,6 @@ import type { Song } from '@/shared/api/subsonic/types';
 
 export type RepeatMode = 'off' | 'one' | 'all';
 
-export const REPEAT_MODES: RepeatMode[] = ['off', 'all', 'one'];
-
 export interface PlayerContextValue {
   currentTrack: Song | null;
   queue: Song[];

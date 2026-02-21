@@ -31,7 +31,7 @@ export interface License {
   trialExpires?: string;
 }
 
-export interface MusicFolder {
+interface MusicFolder {
   id: string | number;
   name: string;
 }
@@ -61,7 +61,7 @@ export interface ArtistIndex {
   artist: Artist[];
 }
 
-export interface Index {
+interface Index {
   name: string;
   artist?: Artist[];
 }
@@ -136,7 +136,7 @@ export interface Song {
   mediaType?: string;
 }
 
-export type Child = Song;
+type Child = Song;
 
 export interface Directory {
   id: string;
@@ -213,7 +213,7 @@ export interface OpenSubsonicExtensionsResponse {
   openSubsonicExtensions: OpenSubsonicExtension[];
 }
 
-export interface NowPlayingEntry extends Song {
+interface NowPlayingEntry extends Song {
   username: string;
   minutesAgo: number;
   playerId: number;
@@ -242,12 +242,12 @@ export interface Lyrics {
   value?: string;
 }
 
-export interface StructuredLyricsLine {
+interface StructuredLyricsLine {
   start?: number;
   value: string;
 }
 
-export interface StructuredLyrics {
+interface StructuredLyrics {
   displayArtist?: string;
   displayTitle?: string;
   lang?: string;
@@ -372,7 +372,7 @@ export interface PlayQueueByIndexResponse {
 
 export type TranscodeMediaType = 'song' | 'podcast';
 
-export interface StreamDetails {
+interface StreamDetails {
   protocol?: string;
   container?: string;
   codec?: string;

@@ -25,20 +25,10 @@ import { CONTENT_GAP, SCREEN_PADDING_H, Spacing } from '@/shared/theme/spacing';
 import { PRESSED_CARD, PRESSED_ROW } from '@/shared/theme/styles';
 import { FontSize } from '@/shared/theme/typography';
 
-const p = Colors.palette;
+import { formatDuration } from './formatDuration';
+export { formatDuration };
 
-export function formatDuration(value: number, inSeconds?: boolean): string {
-  const totalSeconds = inSeconds ? Math.floor(value) : Math.floor(value / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const ss = seconds.toString().padStart(2, '0');
-  if (hours > 0) {
-    const mm = minutes.toString().padStart(2, '0');
-    return `${hours}:${mm}:${ss}`;
-  }
-  return `${minutes}:${ss}`;
-}
+const p = Colors.palette;
 
 export const CoverArt = memo(function CoverArt({
   coverArtId,

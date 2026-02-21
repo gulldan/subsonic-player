@@ -1,9 +1,8 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
 
-test('@a11y home screen has no accessibility violations', async ({ page }) => {
+test('@a11y home screen has no accessibility violations', async ({ page, makeAxeBuilder }) => {
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
-  const results = await new AxeBuilder({ page }).analyze();
+  await page.waitForSelector('main', { state: 'visible' });
+  const results = await makeAxeBuilder().analyze();
   expect(results.violations).toEqual([]);
 });

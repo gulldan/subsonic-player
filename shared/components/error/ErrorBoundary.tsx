@@ -1,7 +1,7 @@
 import { Component, type ComponentType, type PropsWithChildren } from 'react';
 import { ErrorFallback, type ErrorFallbackProps } from '@/shared/components/error/ErrorFallback';
 
-export type ErrorBoundaryProps = PropsWithChildren<{
+type ErrorBoundaryProps = PropsWithChildren<{
   FallbackComponent?: ComponentType<ErrorFallbackProps>;
   onError?: (error: Error, stackTrace: string) => void;
 }>;

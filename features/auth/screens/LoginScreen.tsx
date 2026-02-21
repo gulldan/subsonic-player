@@ -78,6 +78,7 @@ export default function LoginScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + HEADER_TOP_GAP_XL }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        role="main"
       >
         <View style={styles.header}>
           <Ionicons name="radio-outline" size={40} color={p.accent} style={styles.icon} />

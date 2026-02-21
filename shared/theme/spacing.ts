@@ -18,7 +18,6 @@ export const Spacing = {
 
 export const SCREEN_PADDING_H = Spacing.xl;
 export const CONTENT_GAP = Spacing.md;
-export const SECTION_PADDING = Spacing.lg;
 export const SCROLL_BOTTOM_INSET = 100;
 
 // Header offsets (topPadding + N)
@@ -45,5 +44,4 @@ export const PLAYLIST_ITEM_HEIGHT = 76;
 
 // Misc layout
 export const CATEGORY_ROW_HEIGHT = 56;
-export const SEARCH_INPUT_HEIGHT = MIN_TOUCH_TARGET;
 export const SWIPE_ACTION_WIDTH = 80;
