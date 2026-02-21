@@ -29,3 +29,21 @@ export const PLAYER_MUTED_TEXT = p.textSecondary;
 export const PLAYER_TOP_BAR_SURFACE = toRgba(p.textPrimary, 0.1);
 export const PLAYER_ERROR_SURFACE = toRgba(p.danger, 0.2);
 export const PLAYER_SHADOW = toRgba(p.black, 0.55);
+
+// Player sizing tokens
+export const PLAYER_MODE_BTN = 40;
+export const PLAYER_CONTROL_BTN = 52;
+export const PLAYER_PLAY_BTN = 78;
+export const PLAYER_SECONDARY_BTN = 48;
+export const MINI_PLAYER_BTN = 36;
+export const MINI_PROGRESS_HEIGHT = 3;
+export const SLIDER_THUMB = 14;
+export const SLIDER_TRACK = 5;
+export const SLIDER_TOUCH = 36;
+export const REPEAT_BADGE = 14;
+export const ART_SHADOW_OFFSET_Y = 20;
+export const ART_SHADOW_RADIUS = 28;
+export const ART_SHADOW_OPACITY = 0.35;
+export const ART_SHADOW_ELEVATION = 18;
+export const PLAYER_GLOW_INSET = '15%';
+export const PLAYER_GLOW_HEIGHT = 260;

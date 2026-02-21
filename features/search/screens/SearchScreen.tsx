@@ -1,19 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
-import { useEffect, useRef, useState } from 'react';
-import { FlatList, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { createTrackPressHandler } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
-import type { SearchResult3 } from '@/shared/api/subsonic/types';
-import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
+import type { Album, Artist, SearchResult3 } from '@/shared/api/subsonic/types';
+import { HORIZONTAL_LIST_PROPS, keyExtractorById } from '@/shared/components/lists/flatListProps';
 import { AlbumCard, ArtistCard, EmptyState, SectionHeader, TrackList } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import { openAlbum, openArtist } from '@/shared/navigation/navigation';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_LG,
+  SCREEN_PADDING_H,
+  SCROLL_BOTTOM_INSET,
+  SEARCH_INPUT_HEIGHT,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
+
+const ARTIST_ITEM_MARGIN = { marginRight: Spacing.lg } as const;
+const ALBUM_ITEM_MARGIN = { marginRight: Spacing.md } as const;
+const SCROLL_CONTENT_STYLE = { paddingBottom: SCROLL_BOTTOM_INSET } as const;
 
 export default function SearchScreen() {
   const { client } = useAuth();
@@ -53,18 +66,36 @@ export default function SearchScreen() {
     };
   }, [query, client]);
 
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
   const artists = results?.artist ?? [];
   const albums = results?.album ?? [];
   const songs = results?.song ?? [];
   const hasResults = artists.length > 0 || albums.length > 0 || songs.length > 0;
-  const handleSongPress = createTrackPressHandler(player, songs);
+  const handleSongPress = useMemo(() => createTrackPressHandler(player, songs), [player, songs]);
+
+  const renderArtistItem = useCallback(
+    ({ item }: { item: Artist }) => (
+      <View style={ARTIST_ITEM_MARGIN}>
+        <ArtistCard artist={item} onPress={openArtist} />
+      </View>
+    ),
+    [],
+  );
+
+  const renderAlbumItem = useCallback(
+    ({ item }: { item: Album }) => (
+      <View style={ALBUM_ITEM_MARGIN}>
+        <AlbumCard album={item} onPress={openAlbum} size={140} />
+      </View>
+    ),
+    [],
+  );
 
   if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.searchHeader, { paddingTop: topPadding + 16 }]}>
+      <View style={[styles.searchHeader, { paddingTop: topPadding + HEADER_TOP_GAP_LG }]}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={18} color={p.textTertiary} style={styles.searchIcon} />
           <TextInput
@@ -76,15 +107,17 @@ export default function SearchScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
+            accessibilityLabel={t('search.searchPlaceholder')}
           />
           {query.length > 0 && (
-            <Ionicons
-              name="close-circle"
-              size={18}
-              color={p.textTertiary}
+            <Pressable
               onPress={() => setQuery('')}
-              style={styles.clearIcon}
-            />
+              hitSlop={8}
+              accessibilityLabel="Clear search"
+              accessibilityRole="button"
+            >
+              <Ionicons name="close-circle" size={18} color={p.textTertiary} style={styles.clearIcon} />
+            </Pressable>
           )}
         </View>
       </View>
@@ -94,18 +127,14 @@ export default function SearchScreen() {
       ) : !hasResults && !isSearching ? (
         <EmptyState icon="musical-notes" message={t('search.noResults')} />
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={SCROLL_CONTENT_STYLE} showsVerticalScrollIndicator={false}>
           {artists.length > 0 && (
             <View style={styles.section}>
               <SectionHeader title={t('search.artists')} />
               <FlatList
                 data={artists}
-                renderItem={({ item }) => (
-                  <View style={{ marginRight: 16 }}>
-                    <ArtistCard artist={item} onPress={openArtist} />
-                  </View>
-                )}
-                keyExtractor={(item) => item.id}
+                renderItem={renderArtistItem}
+                keyExtractor={keyExtractorById}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
@@ -120,12 +149,8 @@ export default function SearchScreen() {
               <SectionHeader title={t('search.albums')} />
               <FlatList
                 data={albums}
-                renderItem={({ item }) => (
-                  <View style={{ marginRight: 12 }}>
-                    <AlbumCard album={item} onPress={openAlbum} size={140} />
-                  </View>
-                )}
-                keyExtractor={(item) => item.id}
+                renderItem={renderAlbumItem}
+                keyExtractor={keyExtractorById}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
@@ -153,33 +178,33 @@ const styles = StyleSheet.create({
     backgroundColor: p.black,
   },
   searchHeader: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: p.surface,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
+    paddingHorizontal: Spacing.md,
+    height: SEARCH_INPUT_HEIGHT,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   searchInput: {
     flex: 1,
     color: p.textPrimary,
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_400Regular',
   },
   clearIcon: {
-    marginLeft: 8,
+    marginLeft: Spacing.sm,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: Spacing.xxl,
   },
   horizontalList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_PADDING_H,
   },
 });

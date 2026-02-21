@@ -8,11 +8,12 @@ import {
 } from '@expo-google-fonts/inter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  type ListRenderItemInfo,
   Modal,
   Platform,
   Pressable,
@@ -24,12 +25,28 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { Playlist } from '@/shared/api/subsonic/types';
-import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
-import { CoverArt, formatDuration } from '@/shared/components/media/ui';
+import { keyExtractorById, VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
+import { CoverArt, EmptyState, formatDuration } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_SM,
+  ICON_BUTTON_SIZE,
+  PLAYLIST_ITEM_HEIGHT,
+  SCROLL_BOTTOM_INSET,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { PRESSED_ROW } from '@/shared/theme/styles';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
+
+const getItemLayout = (_data: unknown, index: number) => ({
+  length: PLAYLIST_ITEM_HEIGHT,
+  offset: PLAYLIST_ITEM_HEIGHT * index,
+  index,
+});
 
 export default function PlaylistsScreen() {
   const { client } = useAuth();
@@ -41,32 +58,27 @@ export default function PlaylistsScreen() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['playlists'],
     queryFn: () => client!.getPlaylists(),
     enabled: !!client,
   });
 
-  if (!fontsLoaded) return null;
-
-  const playlists = data?.playlists?.playlist ?? [];
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
-
-  const handlePlaylistPress = (playlist: Playlist) => {
+  const handlePlaylistPress = useCallback((playlist: Playlist) => {
     router.push(`/playlist/${playlist.id}`);
-  };
+  }, []);
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
     setNewPlaylistName('');
     setIsCreateModalVisible(true);
-  };
+  }, []);
 
-  const closeCreateModal = () => {
+  const closeCreateModal = useCallback(() => {
     if (isCreating) return;
     setIsCreateModalVisible(false);
-  };
+  }, [isCreating]);
 
-  const handleCreatePlaylist = async () => {
+  const handleCreatePlaylist = useCallback(async () => {
     const playlistName = newPlaylistName.trim();
     if (!client || !playlistName || isCreating) return;
 
@@ -85,15 +97,45 @@ export default function PlaylistsScreen() {
     } finally {
       setIsCreating(false);
     }
-  };
+  }, [client, isCreating, newPlaylistName, queryClient, t]);
+
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<Playlist>) => (
+      <Pressable
+        onPress={() => handlePlaylistPress(item)}
+        style={({ pressed }) => [styles.playlistRow, pressed && PRESSED_ROW]}
+        accessibilityLabel={item.name}
+        accessibilityRole="button"
+      >
+        <CoverArt coverArtId={item.coverArt} size={56} borderRadius={8} />
+        <View style={styles.playlistInfo}>
+          <Text style={styles.playlistName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles.playlistMeta}>
+            {item.songCount} {item.songCount === 1 ? 'song' : 'songs'}
+            {item.duration > 0 ? ` \u00B7 ${formatDuration(item.duration, true)}` : ''}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={p.textTertiary} />
+      </Pressable>
+    ),
+    [handlePlaylistPress],
+  );
+
+  if (!fontsLoaded) return null;
+
+  const playlists = data?.playlists?.playlist ?? [];
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
+      <View style={[styles.header, { paddingTop: topPadding + HEADER_TOP_GAP_SM }]}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={2}
           style={styles.backBtn}
           accessibilityLabel="Go back"
           accessibilityRole="button"
@@ -101,7 +143,12 @@ export default function PlaylistsScreen() {
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>Playlists</Text>
-        <Pressable onPress={openCreateModal} style={styles.actionBtn}>
+        <Pressable
+          onPress={openCreateModal}
+          style={styles.actionBtn}
+          accessibilityLabel="Add playlist"
+          accessibilityRole="button"
+        >
           <Ionicons name="add" size={24} color={p.white} />
         </Pressable>
       </View>
@@ -110,31 +157,19 @@ export default function PlaylistsScreen() {
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={p.accent} />
         </View>
+      ) : isError ? (
+        <EmptyState icon="alert-circle-outline" message={t('common.error')} />
+      ) : playlists.length === 0 ? (
+        <EmptyState icon="list-outline" message={t('common.noResults')} />
       ) : (
         <FlatList
           data={playlists}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+          keyExtractor={keyExtractorById}
+          contentContainerStyle={{ paddingBottom: insets.bottom + SCROLL_BOTTOM_INSET }}
           showsVerticalScrollIndicator={false}
+          getItemLayout={getItemLayout}
           {...VERTICAL_LIST_PROPS}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => handlePlaylistPress(item)}
-              style={({ pressed }) => [styles.playlistRow, pressed && { opacity: 0.6 }]}
-            >
-              <CoverArt coverArtId={item.coverArt} size={56} borderRadius={8} />
-              <View style={styles.playlistInfo}>
-                <Text style={styles.playlistName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text style={styles.playlistMeta}>
-                  {item.songCount} {item.songCount === 1 ? 'song' : 'songs'}
-                  {item.duration > 0 ? ` \u00B7 ${formatDuration(item.duration, true)}` : ''}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={p.textTertiary} />
-            </Pressable>
-          )}
+          renderItem={renderItem}
         />
       )}
 
@@ -152,15 +187,24 @@ export default function PlaylistsScreen() {
               autoCapitalize="sentences"
               returnKeyType="done"
               onSubmitEditing={handleCreatePlaylist}
+              accessibilityLabel={t('playlist.playlistName')}
             />
             <View style={styles.modalActions}>
-              <Pressable onPress={closeCreateModal} style={styles.modalBtn} disabled={isCreating}>
+              <Pressable
+                onPress={closeCreateModal}
+                style={styles.modalBtn}
+                disabled={isCreating}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
+              >
                 <Text style={styles.modalBtnSecondary}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
                 onPress={handleCreatePlaylist}
                 style={[styles.modalBtn, styles.modalBtnPrimary, isCreating && { opacity: 0.6 }]}
                 disabled={isCreating || !newPlaylistName.trim()}
+                accessibilityLabel="Create playlist"
+                accessibilityRole="button"
               >
                 <Text style={styles.modalBtnPrimaryText}>{t('playlist.create')}</Text>
               </Pressable>
@@ -180,24 +224,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionBtn: {
-    width: 40,
-    height: 40,
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     flex: 1,
-    fontSize: 20,
+    fontSize: FontSize.title,
     fontFamily: 'Inter_700Bold',
     color: p.white,
     textAlign: 'center',
@@ -210,21 +254,21 @@ const styles = StyleSheet.create({
   playlistRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 14,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.smd,
+    gap: Spacing.mlg,
   },
   playlistInfo: {
     flex: 1,
-    gap: 3,
+    gap: Spacing['2xs'],
   },
   playlistName: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_500Medium',
     color: p.textPrimary,
   },
   playlistMeta: {
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_400Regular',
     color: p.textSecondary,
   },
@@ -233,7 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: p.overlay,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.xl,
   },
   modalCard: {
     width: '100%',
@@ -241,11 +285,11 @@ const styles = StyleSheet.create({
     backgroundColor: p.surface,
     borderWidth: 1,
     borderColor: p.border,
-    padding: 16,
-    gap: 12,
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: FontSize.sectionTitle,
     fontFamily: 'Inter_600SemiBold',
     color: p.textPrimary,
   },
@@ -253,9 +297,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: p.border,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.smd,
+    fontSize: FontSize.input,
     fontFamily: 'Inter_400Regular',
     color: p.textPrimary,
     backgroundColor: p.black,
@@ -263,7 +307,7 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 10,
+    gap: Spacing.smd,
   },
   modalBtn: {
     minWidth: 84,
@@ -271,18 +315,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: Spacing.md,
   },
   modalBtnPrimary: {
     backgroundColor: p.accent,
   },
   modalBtnSecondary: {
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_500Medium',
     color: p.textSecondary,
   },
   modalBtnPrimaryText: {
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_600SemiBold',
     color: p.black,
   },

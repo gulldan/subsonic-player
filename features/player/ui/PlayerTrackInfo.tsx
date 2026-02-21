@@ -1,6 +1,9 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PLAYER_MUTED_TEXT } from '@/features/player/ui/constants';
 import Colors from '@/shared/theme/colors';
+import { Spacing } from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -10,7 +13,7 @@ interface PlayerTrackInfoProps {
   album?: string;
 }
 
-export function PlayerTrackInfo({ title, artist, album }: PlayerTrackInfoProps) {
+export const PlayerTrackInfo = memo(function PlayerTrackInfo({ title, artist, album }: PlayerTrackInfoProps) {
   return (
     <View style={styles.trackInfoSection}>
       <Text style={styles.trackTitle} numberOfLines={1}>
@@ -24,30 +27,30 @@ export function PlayerTrackInfo({ title, artist, album }: PlayerTrackInfoProps) 
       </Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   trackInfoSection: {
-    paddingHorizontal: 32,
-    marginTop: 14,
-    marginBottom: 8,
+    paddingHorizontal: Spacing.xxxl,
+    marginTop: Spacing.mlg,
+    marginBottom: Spacing.sm,
   },
   trackTitle: {
-    fontSize: 28,
+    fontSize: FontSize.display,
     fontFamily: 'Inter_700Bold',
     color: p.white,
-    marginBottom: 2,
+    marginBottom: Spacing['2xs'],
   },
   trackArtist: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_500Medium',
     color: p.white,
     opacity: 0.9,
   },
   trackAlbum: {
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_400Regular',
     color: PLAYER_MUTED_TEXT,
-    marginTop: 4,
+    marginTop: Spacing.xs,
   },
 });

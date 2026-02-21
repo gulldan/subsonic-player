@@ -5,6 +5,16 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import {
+  CATEGORY_ROW_HEIGHT,
+  HEADER_TOP_GAP_LG,
+  SCREEN_PADDING_H,
+  SCROLL_BOTTOM_INSET,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { PRESSED_ROW } from '@/shared/theme/styles';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -32,12 +42,15 @@ export default function LibraryScreen() {
 
   if (!fontsLoaded) return null;
 
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
 
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding + HEADER_TOP_GAP_LG, paddingBottom: SCROLL_BOTTOM_INSET },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{t('tabs.library')}</Text>
@@ -46,7 +59,9 @@ export default function LibraryScreen() {
           <Pressable
             key={cat.route}
             onPress={() => router.push(cat.route as Href)}
-            style={({ pressed }) => [styles.categoryRow, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [styles.categoryRow, pressed && PRESSED_ROW]}
+            accessibilityLabel={t(cat.labelKey)}
+            accessibilityRole="button"
           >
             <Ionicons name={cat.icon} size={22} color={p.accent} />
             <Text style={styles.categoryLabel}>{t(cat.labelKey)}</Text>
@@ -67,26 +82,26 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: FontSize.display,
     fontFamily: 'Inter_700Bold',
     color: p.white,
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: SCREEN_PADDING_H,
+    marginBottom: Spacing.xxl,
   },
   categoryRow: {
-    height: 56,
+    height: CATEGORY_ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_PADDING_H,
     backgroundColor: p.surface,
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    gap: 14,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    gap: Spacing.mlg,
   },
   categoryLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_600SemiBold',
     color: p.textPrimary,
   },

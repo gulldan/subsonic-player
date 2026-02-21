@@ -9,12 +9,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playOrToggleTrack } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
 import type { Song } from '@/shared/api/subsonic/types';
+import { VERTICAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
 import { EmptyState, formatDuration, TrackItem } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_MD,
+  ICON_BUTTON_SIZE,
+  Spacing,
+  SWIPE_ACTION_WIDTH,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
-const SPACER_40 = { width: 40 } as const;
+const SPACER_40 = { width: ICON_BUTTON_SIZE } as const;
 
 const renderSwipeRightActions = () => (
   <View style={styles.swipeDeleteContainer}>
@@ -118,19 +127,31 @@ export default function QueueScreen() {
 
   if (!fontsLoaded) return null;
 
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding + 12 }]}>
+    <View style={[styles.container, { paddingTop: topPadding + HEADER_TOP_GAP_MD }]}>
       <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
 
       <View style={styles.topBar}>
-        <Pressable onPress={handleGoBack} style={styles.closeBtn}>
+        <Pressable
+          onPress={handleGoBack}
+          style={styles.closeBtn}
+          hitSlop={2}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-down" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('player.queue')}</Text>
         {player.queue.length > 1 ? (
-          <Pressable onPress={handleClearQueue} style={styles.closeBtn}>
+          <Pressable
+            onPress={handleClearQueue}
+            style={styles.closeBtn}
+            hitSlop={2}
+            accessibilityLabel="Clear queue"
+            accessibilityRole="button"
+          >
             <Ionicons name="trash-outline" size={22} color={p.textTertiary} />
           </Pressable>
         ) : (
@@ -148,6 +169,7 @@ export default function QueueScreen() {
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             contentContainerStyle={contentContainerStyle}
+            {...VERTICAL_LIST_PROPS}
           />
         </>
       )}
@@ -163,35 +185,35 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    marginBottom: 4,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.xs,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_600SemiBold',
     color: p.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
   summary: {
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_400Regular',
     color: p.textTertiary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   swipeDeleteContainer: {
     backgroundColor: p.danger,
     justifyContent: 'center',
     alignItems: 'center',
-    width: 80,
+    width: SWIPE_ACTION_WIDTH,
   },
 });

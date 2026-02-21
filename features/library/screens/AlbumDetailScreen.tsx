@@ -8,6 +8,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useMemo } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -26,8 +27,18 @@ import {
   createTrackPressHandler,
 } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
-import { CoverArt, formatDuration, TrackList } from '@/shared/components/media/ui';
+import { createDetailContentStyle } from '@/shared/components/lists/flatListProps';
+import { CoverArt, EmptyState, formatDuration, TrackList } from '@/shared/components/media/ui';
 import Colors from '@/shared/theme/colors';
+import {
+  DETAIL_ART_MARGIN,
+  HEADER_TOP_GAP_SM,
+  ICON_BUTTON_RADIUS,
+  ICON_BUTTON_SIZE,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -39,23 +50,29 @@ export default function AlbumDetailScreen() {
   const { width } = useWindowDimensions();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['album', id],
     queryFn: () => client!.getAlbum(id as string),
     enabled: !!client && !!id,
   });
 
-  if (!fontsLoaded) return null;
-
   const album = data?.album;
   const songs = album?.song ?? [];
-  const artSize = width - 80;
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
 
+  const handlePlayAll = useMemo(() => createPlayAllHandler(player, songs), [player, songs]);
+  const handleShuffle = useMemo(() => createShufflePlayHandler(player, songs), [player, songs]);
+  const handleTrackPress = useMemo(() => createTrackPressHandler(player, songs), [player, songs]);
+
+  const artSize = width - DETAIL_ART_MARGIN * 2;
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
   const totalDuration = songs.reduce((acc, s) => acc + (s.duration ?? 0), 0);
-  const handlePlayAll = createPlayAllHandler(player, songs);
-  const handleShuffle = createShufflePlayHandler(player, songs);
-  const handleTrackPress = createTrackPressHandler(player, songs);
+
+  const contentContainerStyle = useMemo(
+    () => createDetailContentStyle(topPadding, insets.bottom),
+    [topPadding, insets.bottom],
+  );
+
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
@@ -63,7 +80,8 @@ export default function AlbumDetailScreen() {
 
       <Pressable
         onPress={() => router.back()}
-        style={[styles.backBtn, { top: topPadding + 8 }]}
+        style={[styles.backBtn, { top: topPadding + HEADER_TOP_GAP_SM }]}
+        hitSlop={2}
         accessibilityLabel="Go back"
         accessibilityRole="button"
       >
@@ -74,11 +92,10 @@ export default function AlbumDetailScreen() {
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={p.accent} />
         </View>
+      ) : isError || (!album && !isLoading) ? (
+        <EmptyState icon="alert-circle-outline" message="Failed to load album" />
       ) : album ? (
-        <ScrollView
-          contentContainerStyle={{ paddingTop: topPadding + 16, paddingBottom: insets.bottom + 100 }}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={contentContainerStyle} showsVerticalScrollIndicator={false}>
           <View style={styles.artWrap}>
             <CoverArt coverArtId={album.coverArt} size={artSize} borderRadius={16} />
           </View>
@@ -87,7 +104,11 @@ export default function AlbumDetailScreen() {
             <Text style={styles.albumTitle}>{album.name}</Text>
 
             {album.artist ? (
-              <Pressable onPress={() => album.artistId && router.push(`/artist/${album.artistId}`)}>
+              <Pressable
+                onPress={() => album.artistId && router.push(`/artist/${album.artistId}`)}
+                accessibilityLabel={album.artist}
+                accessibilityRole="button"
+              >
                 <Text style={styles.artistName}>{album.artist}</Text>
               </Pressable>
             ) : null}
@@ -102,11 +123,21 @@ export default function AlbumDetailScreen() {
             </View>
 
             <View style={styles.buttonRow}>
-              <Pressable onPress={handlePlayAll} style={styles.playAllBtn}>
+              <Pressable
+                onPress={handlePlayAll}
+                style={styles.playAllBtn}
+                accessibilityLabel="Play all"
+                accessibilityRole="button"
+              >
                 <Ionicons name="play" size={20} color={p.black} />
                 <Text style={styles.playAllText}>Play All</Text>
               </Pressable>
-              <Pressable onPress={handleShuffle} style={styles.shuffleBtn}>
+              <Pressable
+                onPress={handleShuffle}
+                style={styles.shuffleBtn}
+                accessibilityLabel="Shuffle"
+                accessibilityRole="button"
+              >
                 <Ionicons name="shuffle" size={20} color={p.accent} />
                 <Text style={styles.shuffleText}>Shuffle</Text>
               </Pressable>
@@ -127,11 +158,11 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     position: 'absolute',
-    left: 12,
+    left: Spacing.md,
     zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
+    borderRadius: ICON_BUTTON_RADIUS,
     backgroundColor: p.overlay,
     alignItems: 'center',
     justifyContent: 'center',
@@ -143,52 +174,52 @@ const styles = StyleSheet.create({
   },
   artWrap: {
     alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 40,
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing['4xl'],
   },
   info: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   albumTitle: {
-    fontSize: 24,
+    fontSize: FontSize.headline,
     fontFamily: 'Inter_700Bold',
     color: p.white,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   artistName: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_500Medium',
     color: p.accent,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_400Regular',
     color: p.textSecondary,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing.md,
   },
   playAllBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     height: 48,
     backgroundColor: p.accent,
     borderRadius: 12,
   },
   playAllText: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_600SemiBold',
     color: p.black,
   },
@@ -197,14 +228,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     height: 48,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: p.accent,
   },
   shuffleText: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_600SemiBold',
     color: p.accent,
   },

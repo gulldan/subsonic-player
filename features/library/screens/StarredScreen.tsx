@@ -8,20 +8,43 @@ import {
 } from '@expo-google-fonts/inter';
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
-import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  type ListRenderItemInfo,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { openAlbum, openArtist } from '@/features/library/application/navigation';
 import { createTrackPressHandler } from '@/features/player/core/application/trackListPlayback';
 import { usePlayer } from '@/features/player/core/presentation/PlayerProvider';
-import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
+import type { Artist } from '@/shared/api/subsonic/types';
+import { HORIZONTAL_LIST_PROPS, keyExtractorById } from '@/shared/components/lists/flatListProps';
 import { createAlbumCardRenderItem } from '@/shared/components/media/renderers';
 import { CoverArt, EmptyState, SectionHeader, TrackList } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_SM,
+  ICON_BUTTON_SIZE,
+  SCROLL_BOTTOM_INSET,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { PRESSED_CARD } from '@/shared/theme/styles';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
-const SPACER_40 = { width: 40 } as const;
+const SPACER_40 = { width: ICON_BUTTON_SIZE } as const;
+const ARTIST_LIST_CONTENT_STYLE = { paddingHorizontal: Spacing.xl, gap: Spacing.lg } as const;
+const ARTIST_ITEM_STYLE = { alignItems: 'center' as const, width: 90 } as const;
 
 export default function StarredScreen() {
   const { client } = useAuth();
@@ -36,13 +59,35 @@ export default function StarredScreen() {
     enabled: !!client,
   });
 
+  const renderArtistItem = useCallback(
+    ({ item }: ListRenderItemInfo<Artist>) => (
+      <Pressable
+        onPress={() => openArtist(item)}
+        style={({ pressed }) => [ARTIST_ITEM_STYLE, pressed && PRESSED_CARD]}
+        accessibilityLabel={item.name}
+        accessibilityRole="button"
+      >
+        <CoverArt coverArtId={item.coverArt} size={80} borderRadius={40} />
+        <Text style={styles.artistName} numberOfLines={1}>
+          {item.name}
+        </Text>
+      </Pressable>
+    ),
+    [],
+  );
+
+  const contentContainerStyle = useMemo(
+    () => ({ paddingBottom: insets.bottom + SCROLL_BOTTOM_INSET }),
+    [insets.bottom],
+  );
+
   if (!fontsLoaded) return null;
 
   const starred = data?.starred2;
   const artists = starred?.artist ?? [];
   const albums = starred?.album ?? [];
   const songs = starred?.song ?? [];
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
   const isEmpty = artists.length === 0 && albums.length === 0 && songs.length === 0;
   const handleTrackPress = createTrackPressHandler(player, songs);
   const renderAlbumRailItem = createAlbumCardRenderItem(openAlbum, 150);
@@ -51,9 +96,10 @@ export default function StarredScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={[styles.header, { paddingTop: topPadding + 8 }]}>
+      <View style={[styles.header, { paddingTop: topPadding + HEADER_TOP_GAP_SM }]}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={2}
           style={styles.backBtn}
           accessibilityLabel="Go back"
           accessibilityRole="button"
@@ -71,7 +117,7 @@ export default function StarredScreen() {
       ) : isEmpty ? (
         <EmptyState icon="star-outline" message={t('common.noResults')} />
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={contentContainerStyle} showsVerticalScrollIndicator={false}>
           {artists.length > 0 ? (
             <View style={styles.section}>
               <SectionHeader title={t('search.artists')} />
@@ -79,20 +125,10 @@ export default function StarredScreen() {
                 data={artists}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
-                keyExtractor={(item) => item.id}
+                contentContainerStyle={ARTIST_LIST_CONTENT_STYLE}
+                keyExtractor={keyExtractorById}
                 {...HORIZONTAL_LIST_PROPS}
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => openArtist(item)}
-                    style={({ pressed }) => [{ alignItems: 'center', width: 90 }, pressed && { opacity: 0.7 }]}
-                  >
-                    <CoverArt coverArtId={item.coverArt} size={80} borderRadius={40} />
-                    <Text style={styles.artistName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                  </Pressable>
-                )}
+                renderItem={renderArtistItem}
               />
             </View>
           ) : null}
@@ -104,8 +140,8 @@ export default function StarredScreen() {
                 data={albums}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
-                keyExtractor={(item) => item.id}
+                contentContainerStyle={ARTIST_LIST_CONTENT_STYLE}
+                keyExtractor={keyExtractorById}
                 renderItem={renderAlbumRailItem}
                 {...HORIZONTAL_LIST_PROPS}
               />
@@ -132,18 +168,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     flex: 1,
-    fontSize: 20,
+    fontSize: FontSize.title,
     fontFamily: 'Inter_700Bold',
     color: p.white,
     textAlign: 'center',
@@ -154,14 +190,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   section: {
-    marginTop: 8,
-    marginBottom: 20,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   artistName: {
-    fontSize: 12,
+    fontSize: FontSize.caption,
     fontFamily: 'Inter_500Medium',
     color: p.textPrimary,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: Spacing.xs,
   },
 });

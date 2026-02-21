@@ -2,15 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_LG,
+  SCREEN_PADDING_H,
+  SCROLL_BOTTOM_INSET,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { PRESSED_ROW } from '@/shared/theme/styles';
+import { FontSize } from '@/shared/theme/typography';
 import { formatDateTime } from '@/shared/utils/formatDateTime';
 
 const p = Colors.palette;
+
+const rowPressableStyle = ({ pressed }: { pressed: boolean }) => [styles.row, pressed && PRESSED_ROW];
 
 export default function SettingsScreen() {
   const { serverConfig, disconnect, client } = useAuth();
@@ -63,52 +74,55 @@ export default function SettingsScreen() {
     return () => clearInterval(timer);
   }, [scanning, refetchScan]);
 
-  if (!fontsLoaded) return null;
-
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
-
-  const handleCycleLanguage = () => {
+  const handleCycleLanguage = useCallback(() => {
     const order: ('en' | 'ja' | 'ru')[] = ['en', 'ja', 'ru'];
     const currentIdx = order.indexOf(locale);
     const nextLocale = order[(currentIdx + 1) % order.length];
     setLocale(nextLocale);
-  };
+  }, [locale, setLocale]);
 
-  const currentLanguageName = availableLocales.find((l) => l.code === locale)?.nativeName ?? locale;
-
-  const handleDisconnect = () => {
+  const handleDisconnect = useCallback(() => {
     Alert.alert(t('auth.logout'), '', [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('auth.logout'), style: 'destructive', onPress: () => disconnect() },
     ]);
-  };
+  }, [t, disconnect]);
 
-  const handleRefreshServerData = async () => {
+  const handleRefreshServerData = useCallback(async () => {
     await Promise.all([refetchScan(), refetchLicense(), refetchFolders(), refetchExtensions()]);
-  };
+  }, [refetchScan, refetchLicense, refetchFolders, refetchExtensions]);
 
-  const handleStartScan = async (fullScan: boolean) => {
-    if (!client || isStartingScan) return;
+  const handleStartScan = useCallback(
+    async (fullScan: boolean) => {
+      if (!client || isStartingScan) return;
 
-    setIsStartingScan(true);
-    try {
-      await client.startScan(fullScan);
-      await refetchScan();
-    } catch {
-      Alert.alert(t('common.error'), 'Failed to start scan');
-    } finally {
-      setIsStartingScan(false);
-    }
-  };
+      setIsStartingScan(true);
+      try {
+        await client.startScan(fullScan);
+        await refetchScan();
+      } catch {
+        Alert.alert(t('common.error'), 'Failed to start scan');
+      } finally {
+        setIsStartingScan(false);
+      }
+    },
+    [client, isStartingScan, refetchScan, t],
+  );
 
-  const rowPressableStyle = ({ pressed }: { pressed: boolean }) => [styles.row, pressed && { opacity: 0.6 }];
+  if (!fontsLoaded) return null;
+
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
+  const currentLanguageName = availableLocales.find((l) => l.code === locale)?.nativeName ?? locale;
 
   const scanStatusLabel = scanning ? t('settings.scanning') : t('settings.idle');
 
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding + HEADER_TOP_GAP_LG, paddingBottom: SCROLL_BOTTOM_INSET },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageTitle}>{t('tabs.settings')}</Text>
@@ -135,7 +149,12 @@ export default function SettingsScreen() {
             </View>
           </View>
           <View style={styles.divider} />
-          <Pressable onPress={handleDisconnect} style={rowPressableStyle}>
+          <Pressable
+            onPress={handleDisconnect}
+            style={rowPressableStyle}
+            accessibilityLabel={t('auth.logout')}
+            accessibilityRole="button"
+          >
             <Ionicons name="log-out-outline" size={20} color={p.danger} />
             <Text style={styles.dangerLabel}>{t('auth.logout')}</Text>
           </Pressable>
@@ -180,19 +199,36 @@ export default function SettingsScreen() {
             </View>
           </View>
           <View style={styles.divider} />
-          <Pressable onPress={() => void handleStartScan(false)} style={rowPressableStyle} disabled={isStartingScan}>
+          <Pressable
+            onPress={() => void handleStartScan(false)}
+            style={rowPressableStyle}
+            disabled={isStartingScan}
+            accessibilityLabel={t('settings.scanNow')}
+            accessibilityRole="button"
+          >
             <Ionicons name="scan" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('settings.scanNow')}</Text>
             {isStartingScan ? <ActivityIndicator size="small" color={p.accent} /> : null}
           </Pressable>
           <View style={styles.divider} />
-          <Pressable onPress={() => void handleStartScan(true)} style={rowPressableStyle} disabled={isStartingScan}>
+          <Pressable
+            onPress={() => void handleStartScan(true)}
+            style={rowPressableStyle}
+            disabled={isStartingScan}
+            accessibilityLabel={t('settings.fullScan')}
+            accessibilityRole="button"
+          >
             <Ionicons name="refresh-circle-outline" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('settings.fullScan')}</Text>
             {isStartingScan ? <ActivityIndicator size="small" color={p.accent} /> : null}
           </Pressable>
           <View style={styles.divider} />
-          <Pressable onPress={() => void handleRefreshServerData()} style={rowPressableStyle}>
+          <Pressable
+            onPress={() => void handleRefreshServerData()}
+            style={rowPressableStyle}
+            accessibilityLabel={t('common.refresh')}
+            accessibilityRole="button"
+          >
             <Ionicons name="refresh" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('common.refresh')}</Text>
           </Pressable>
@@ -200,19 +236,34 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>{t('settings.tools')}</Text>
         <View style={styles.card}>
-          <Pressable onPress={() => router.push('/bookmarks')} style={rowPressableStyle}>
+          <Pressable
+            onPress={() => router.push('/bookmarks')}
+            style={rowPressableStyle}
+            accessibilityLabel={t('library.bookmarks')}
+            accessibilityRole="button"
+          >
             <Ionicons name="bookmark-outline" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('library.bookmarks')}</Text>
             <Ionicons name="chevron-forward" size={18} color={p.textTertiary} />
           </Pressable>
           <View style={styles.divider} />
-          <Pressable onPress={() => router.push('/shares')} style={rowPressableStyle}>
+          <Pressable
+            onPress={() => router.push('/shares')}
+            style={rowPressableStyle}
+            accessibilityLabel={t('library.shares')}
+            accessibilityRole="button"
+          >
             <Ionicons name="share-social-outline" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('library.shares')}</Text>
             <Ionicons name="chevron-forward" size={18} color={p.textTertiary} />
           </Pressable>
           <View style={styles.divider} />
-          <Pressable onPress={() => router.push('/radio')} style={rowPressableStyle}>
+          <Pressable
+            onPress={() => router.push('/radio')}
+            style={rowPressableStyle}
+            accessibilityLabel={t('library.radio')}
+            accessibilityRole="button"
+          >
             <Ionicons name="radio-outline" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('library.radio')}</Text>
             <Ionicons name="chevron-forward" size={18} color={p.textTertiary} />
@@ -221,7 +272,12 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
         <View style={styles.card}>
-          <Pressable onPress={handleCycleLanguage} style={rowPressableStyle}>
+          <Pressable
+            onPress={handleCycleLanguage}
+            style={rowPressableStyle}
+            accessibilityLabel={t('settings.language')}
+            accessibilityRole="button"
+          >
             <Ionicons name="language-outline" size={20} color={p.accent} />
             <Text style={styles.rowLabel}>{t('settings.language')}</Text>
             <Text style={styles.rowValue}>{currentLanguageName}</Text>
@@ -251,65 +307,65 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: FontSize.display,
     fontFamily: 'Inter_700Bold',
     color: p.white,
-    paddingHorizontal: 20,
-    marginBottom: 28,
+    paddingHorizontal: SCREEN_PADDING_H,
+    marginBottom: Spacing['3xl'],
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_600SemiBold',
     color: p.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    paddingHorizontal: 20,
-    marginBottom: 8,
-    marginTop: 8,
+    paddingHorizontal: SCREEN_PADDING_H,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   card: {
     backgroundColor: p.surface,
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 20,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.xl,
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.mlg,
+    gap: Spacing.md,
   },
   rowContent: {
     flex: 1,
-    gap: 2,
+    gap: Spacing['2xs'],
   },
   rowLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_600SemiBold',
     color: p.textPrimary,
   },
   rowValue: {
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_400Regular',
     color: p.textSecondary,
   },
   rowSubValue: {
-    fontSize: 12,
+    fontSize: FontSize.caption,
     fontFamily: 'Inter_400Regular',
     color: p.textTertiary,
   },
   dangerLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_600SemiBold',
     color: p.danger,
   },
   divider: {
     height: 1,
     backgroundColor: p.border,
-    marginLeft: 48,
+    marginLeft: Spacing['5xl'],
   },
 });

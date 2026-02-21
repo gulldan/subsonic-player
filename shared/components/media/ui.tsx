@@ -22,11 +22,10 @@ import type { Album, Artist, Song } from '@/shared/api/subsonic/types';
 import { useCoverArtUrl } from '@/shared/components/media/CoverArtContext';
 import Colors from '@/shared/theme/colors';
 import { CONTENT_GAP, SCREEN_PADDING_H, Spacing } from '@/shared/theme/spacing';
+import { PRESSED_CARD, PRESSED_ROW } from '@/shared/theme/styles';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
-
-const PRESSED_ROW = { opacity: 0.6 } as const;
-const PRESSED_CARD = { opacity: 0.7 } as const;
 
 export function formatDuration(value: number, inSeconds?: boolean): string {
   const totalSeconds = inSeconds ? Math.floor(value) : Math.floor(value / 1000);
@@ -155,7 +154,7 @@ export const TrackList = memo(function TrackList({
   );
 });
 
-export function AlbumCard({
+export const AlbumCard = memo(function AlbumCard({
   album,
   onPress,
   size = 160,
@@ -180,9 +179,15 @@ export function AlbumCard({
       </Text>
     </Pressable>
   );
-}
+});
 
-export function ArtistCard({ artist, onPress }: { artist: Artist; onPress: (artist: Artist) => void }) {
+export const ArtistCard = memo(function ArtistCard({
+  artist,
+  onPress,
+}: {
+  artist: Artist;
+  onPress: (artist: Artist) => void;
+}) {
   return (
     <Pressable
       onPress={() => onPress(artist)}
@@ -196,7 +201,7 @@ export function ArtistCard({ artist, onPress }: { artist: Artist; onPress: (arti
       </Text>
     </Pressable>
   );
-}
+});
 
 export function SectionHeader({
   title,
@@ -278,7 +283,7 @@ const styles = StyleSheet.create({
   trackRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: Spacing.smd,
     paddingHorizontal: Spacing.lg,
     gap: CONTENT_GAP,
   },
@@ -286,16 +291,16 @@ const styles = StyleSheet.create({
     width: 28,
     textAlign: 'center',
     color: p.textTertiary,
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_400Regular',
   },
   trackInfo: {
     flex: 1,
-    gap: 2,
+    gap: Spacing['2xs'],
   },
   trackTitle: {
     color: p.textPrimary,
-    fontSize: 15,
+    fontSize: FontSize.input,
     fontFamily: 'Inter_500Medium',
   },
   trackTitleActive: {
@@ -303,25 +308,25 @@ const styles = StyleSheet.create({
   },
   trackArtist: {
     color: p.textSecondary,
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_400Regular',
   },
   trackDuration: {
     color: p.textTertiary,
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_400Regular',
   },
   albumName: {
     color: p.textPrimary,
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_500Medium',
     marginTop: Spacing.sm,
   },
   albumArtist: {
     color: p.textSecondary,
-    fontSize: 12,
+    fontSize: FontSize.caption,
     fontFamily: 'Inter_400Regular',
-    marginTop: 2,
+    marginTop: Spacing['2xs'],
   },
   artistCard: {
     alignItems: 'center',
@@ -329,7 +334,7 @@ const styles = StyleSheet.create({
   },
   artistName: {
     color: p.textPrimary,
-    fontSize: 12,
+    fontSize: FontSize.caption,
     fontFamily: 'Inter_500Medium',
     marginTop: Spacing.sm,
     textAlign: 'center',
@@ -343,12 +348,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: p.white,
-    fontSize: 20,
+    fontSize: FontSize.title,
     fontFamily: 'Inter_600SemiBold',
   },
   seeAllText: {
     color: p.accent,
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_500Medium',
   },
   emptyState: {
@@ -360,7 +365,7 @@ const styles = StyleSheet.create({
   },
   emptyMessage: {
     color: p.textTertiary,
-    fontSize: 15,
+    fontSize: FontSize.input,
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
   },

@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
+import { HEADER_TOP_GAP_XL, Spacing, WEB_HEADER_OFFSET } from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -68,12 +70,12 @@ export default function LoginScreen() {
     return <Redirect href="/(tabs)" />;
   }
 
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 40 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + HEADER_TOP_GAP_XL }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -96,6 +98,7 @@ export default function LoginScreen() {
             autoCorrect={false}
             keyboardType="url"
             returnKeyType="next"
+            accessibilityLabel="Server URL"
           />
 
           <TextInput
@@ -109,6 +112,7 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
+            accessibilityLabel={t('auth.username')}
           />
 
           <TextInput
@@ -123,6 +127,7 @@ export default function LoginScreen() {
             autoCapitalize="none"
             returnKeyType="go"
             onSubmitEditing={handleConnect}
+            accessibilityLabel={t('auth.password')}
           />
 
           <Pressable
@@ -133,6 +138,8 @@ export default function LoginScreen() {
             ]}
             onPress={handleConnect}
             disabled={connecting}
+            accessibilityLabel="Connect to server"
+            accessibilityRole="button"
           >
             {connecting ? (
               <ActivityIndicator size="small" color={p.black} />
@@ -161,36 +168,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: Spacing.xxl,
+    paddingBottom: Spacing['4xl'],
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: Spacing['5xl'],
   },
   icon: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   title: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 28,
+    fontSize: FontSize.display,
     color: p.accent,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 15,
+    fontSize: FontSize.input,
     color: p.textSecondary,
   },
   form: {
-    gap: 14,
+    gap: Spacing.mlg,
   },
   input: {
     backgroundColor: p.surface,
     borderRadius: 12,
-    padding: 16,
+    padding: Spacing.lg,
     color: p.textPrimary,
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     borderWidth: 1,
     borderColor: p.border,
     fontFamily: 'Inter_400Regular',
@@ -201,10 +208,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: p.accent,
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   buttonPressed: {
     opacity: 0.85,
@@ -214,14 +221,14 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     color: p.black,
   },
   errorText: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 14,
+    fontSize: FontSize.body,
     color: p.danger,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: Spacing.xs,
   },
 });

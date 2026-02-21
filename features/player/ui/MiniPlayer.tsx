@@ -7,7 +7,9 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useTrackReactions } from '@/features/player/core/application/useTrackReactions';
 import { usePlayer, usePlayerPosition } from '@/features/player/core/presentation/PlayerProvider';
 import {
+  MINI_PLAYER_BTN,
   MINI_PLAYER_GRADIENT,
+  MINI_PROGRESS_HEIGHT,
   PLAYER_ACCENT,
   PLAYER_PROGRESS_TRACK,
   PLAYER_SHADOW,
@@ -15,6 +17,8 @@ import {
 import { runWithLightHaptic } from '@/features/player/ui/haptics';
 import { CoverArt } from '@/shared/components/media/ui';
 import Colors from '@/shared/theme/colors';
+import { Spacing } from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -81,6 +85,7 @@ export const MiniPlayer = memo(function MiniPlayer({
 
       <Pressable
         onPress={handleStar}
+        hitSlop={4}
         style={styles.miniPlayerBtn}
         accessibilityLabel={isStarred ? 'Remove from favorites' : 'Add to favorites'}
         accessibilityRole="button"
@@ -94,6 +99,7 @@ export const MiniPlayer = memo(function MiniPlayer({
 
       <Pressable
         onPress={handlePrevious}
+        hitSlop={4}
         style={styles.miniPlayerBtn}
         accessibilityLabel="Previous track"
         accessibilityRole="button"
@@ -103,6 +109,7 @@ export const MiniPlayer = memo(function MiniPlayer({
 
       <Pressable
         onPress={handlePlayPause}
+        hitSlop={4}
         style={styles.miniPlayPauseBtn}
         disabled={isLoading}
         accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
@@ -117,6 +124,7 @@ export const MiniPlayer = memo(function MiniPlayer({
 
       <Pressable
         onPress={handleNext}
+        hitSlop={4}
         style={styles.miniPlayerBtn}
         accessibilityLabel="Next track"
         accessibilityRole="button"
@@ -130,14 +138,14 @@ export const MiniPlayer = memo(function MiniPlayer({
 const styles = StyleSheet.create({
   miniPlayer: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: Spacing.sm,
+    right: Spacing.sm,
     height: 64,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingRight: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingRight: Spacing.xs,
     overflow: 'hidden',
     ...Platform.select<ViewStyle>({
       web: {
@@ -158,11 +166,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 3,
+    height: MINI_PROGRESS_HEIGHT,
     backgroundColor: PLAYER_PROGRESS_TRACK,
   },
   miniProgressFill: {
-    height: 3,
+    height: MINI_PROGRESS_HEIGHT,
     backgroundColor: PLAYER_ACCENT,
     borderRadius: 1,
   },
@@ -170,33 +178,33 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.smd,
   },
   miniPlayerInfo: {
     flex: 1,
-    gap: 2,
+    gap: Spacing['2xs'],
   },
   miniPlayerTitle: {
     color: p.textPrimary,
-    fontSize: 14,
+    fontSize: FontSize.body,
     fontFamily: 'Inter_600SemiBold',
   },
   miniPlayerArtist: {
     color: p.textSecondary,
-    fontSize: 12,
+    fontSize: FontSize.caption,
     fontFamily: 'Inter_400Regular',
   },
   miniPlayerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: MINI_PLAYER_BTN,
+    height: MINI_PLAYER_BTN,
+    borderRadius: MINI_PLAYER_BTN / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   miniPlayPauseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: MINI_PLAYER_BTN,
+    height: MINI_PLAYER_BTN,
+    borderRadius: MINI_PLAYER_BTN / 2,
     backgroundColor: PLAYER_ACCENT,
     alignItems: 'center',
     justifyContent: 'center',

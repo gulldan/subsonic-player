@@ -1,22 +1,33 @@
 import { Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { FlatList, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { Album } from '@/shared/api/subsonic/types';
-import { HORIZONTAL_LIST_PROPS } from '@/shared/components/lists/flatListProps';
-import { AlbumCard, SectionHeader, Shimmer } from '@/shared/components/media/ui';
+import { HORIZONTAL_LIST_PROPS, keyExtractorById } from '@/shared/components/lists/flatListProps';
+import { AlbumCard, EmptyState, SectionHeader, Shimmer } from '@/shared/components/media/ui';
 import { useI18n } from '@/shared/i18n';
 import { openAlbum } from '@/shared/navigation/navigation';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_LG,
+  SCREEN_PADDING_H,
+  SCROLL_BOTTOM_INSET,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
+
+const ALBUM_ITEM_MARGIN = { marginRight: Spacing.md } as const;
 
 function ShimmerRow() {
   return (
     <View style={styles.shimmerRow}>
       {[1, 2, 3].map((i) => (
-        <Shimmer key={i} width={160} height={160} borderRadius={12} style={{ marginRight: 12 }} />
+        <Shimmer key={i} width={160} height={160} borderRadius={12} style={ALBUM_ITEM_MARGIN} />
       ))}
     </View>
   );
@@ -28,23 +39,44 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({ Inter_600SemiBold, Inter_700Bold });
 
-  const { data: randomData, isLoading: randomLoading } = useQuery({
+  const {
+    data: randomData,
+    isLoading: randomLoading,
+    isError: randomError,
+  } = useQuery({
     queryKey: ['albumList', 'random'],
     queryFn: () => client!.getAlbumList2('random', 10),
     enabled: !!client,
   });
 
-  const { data: newestData, isLoading: newestLoading } = useQuery({
+  const {
+    data: newestData,
+    isLoading: newestLoading,
+    isError: newestError,
+  } = useQuery({
     queryKey: ['albumList', 'newest'],
     queryFn: () => client!.getAlbumList2('newest', 10),
     enabled: !!client,
   });
 
-  const { data: frequentData, isLoading: frequentLoading } = useQuery({
+  const {
+    data: frequentData,
+    isLoading: frequentLoading,
+    isError: frequentError,
+  } = useQuery({
     queryKey: ['albumList', 'frequent'],
     queryFn: () => client!.getAlbumList2('frequent', 10),
     enabled: !!client,
   });
+
+  const renderAlbumItem = useCallback(
+    ({ item }: { item: Album }) => (
+      <View style={ALBUM_ITEM_MARGIN}>
+        <AlbumCard album={item} onPress={openAlbum} size={160} />
+      </View>
+    ),
+    [],
+  );
 
   if (!fontsLoaded) return null;
   if (!client) return null;
@@ -53,21 +85,26 @@ export default function HomeScreen() {
   const newestAlbums = newestData?.albumList2?.album ?? [];
   const frequentAlbums = frequentData?.albumList2?.album ?? [];
 
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
 
-  const renderAlbumItem = ({ item }: { item: Album }) => (
-    <View style={{ marginRight: 12 }}>
-      <AlbumCard album={item} onPress={openAlbum} size={160} />
-    </View>
-  );
+  const isAllEmpty = randomAlbums.length === 0 && newestAlbums.length === 0 && frequentAlbums.length === 0;
+  const isAnyError = randomError || newestError || frequentError;
+  const isAnyLoading = randomLoading || newestLoading || frequentLoading;
 
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding + HEADER_TOP_GAP_LG, paddingBottom: SCROLL_BOTTOM_INSET },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.greeting}>SonicWave</Text>
+
+        {isAnyError && isAllEmpty && !isAnyLoading ? (
+          <EmptyState icon="cloud-offline-outline" message="Failed to load albums. Please try again." />
+        ) : null}
 
         <View style={styles.section}>
           <SectionHeader title={t('home.randomPicks')} />
@@ -77,7 +114,7 @@ export default function HomeScreen() {
             <FlatList
               data={randomAlbums}
               renderItem={renderAlbumItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={keyExtractorById}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
@@ -95,7 +132,7 @@ export default function HomeScreen() {
             <FlatList
               data={newestAlbums}
               renderItem={renderAlbumItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={keyExtractorById}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
@@ -113,7 +150,7 @@ export default function HomeScreen() {
             <FlatList
               data={frequentAlbums}
               renderItem={renderAlbumItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={keyExtractorById}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
@@ -136,20 +173,20 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: FontSize.display,
     fontFamily: 'Inter_700Bold',
     color: p.white,
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: SCREEN_PADDING_H,
+    marginBottom: Spacing.xxl,
   },
   section: {
-    marginBottom: 28,
+    marginBottom: Spacing['3xl'],
   },
   horizontalList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_PADDING_H,
   },
   shimmerRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_PADDING_H,
   },
 });

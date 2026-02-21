@@ -1,8 +1,17 @@
-import type { RefObject } from 'react';
+import { memo, type RefObject } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import { PLAYER_ACCENT, PLAYER_MUTED_TEXT, PLAYER_PROGRESS_TRACK } from '@/features/player/ui/constants';
+import {
+  PLAYER_ACCENT,
+  PLAYER_MUTED_TEXT,
+  PLAYER_PROGRESS_TRACK,
+  SLIDER_THUMB,
+  SLIDER_TOUCH,
+  SLIDER_TRACK,
+} from '@/features/player/ui/constants';
 import { formatDuration } from '@/shared/components/media/ui';
+import { Spacing } from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 interface PlayerProgressProps {
   sliderRef: RefObject<View | null>;
@@ -13,7 +22,7 @@ interface PlayerProgressProps {
   remaining: number;
 }
 
-export function PlayerProgress({
+export const PlayerProgress = memo(function PlayerProgress({
   sliderRef,
   onSliderLayout,
   panHandlers,
@@ -23,7 +32,15 @@ export function PlayerProgress({
 }: PlayerProgressProps) {
   return (
     <View style={styles.progressSection}>
-      <View ref={sliderRef} onLayout={onSliderLayout} style={styles.sliderTouchArea} {...panHandlers}>
+      <View
+        ref={sliderRef}
+        onLayout={onSliderLayout}
+        style={styles.sliderTouchArea}
+        accessibilityRole="adjustable"
+        accessibilityLabel="Playback position"
+        accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
+        {...panHandlers}
+      >
         <View style={styles.sliderTrack}>
           <View style={[styles.sliderProgress, { width: `${progress * 100}%` }]} />
           <View style={[styles.sliderThumb, { left: `${progress * 100}%` }]} />
@@ -35,36 +52,36 @@ export function PlayerProgress({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   progressSection: {
-    paddingHorizontal: 32,
-    marginTop: 14,
+    paddingHorizontal: Spacing.xxxl,
+    marginTop: Spacing.mlg,
   },
   sliderTouchArea: {
-    height: 36,
+    height: SLIDER_TOUCH,
     justifyContent: 'center',
   },
   sliderTrack: {
-    height: 5,
+    height: SLIDER_TRACK,
     backgroundColor: PLAYER_PROGRESS_TRACK,
     borderRadius: 3,
     overflow: 'visible',
   },
   sliderProgress: {
-    height: 5,
+    height: SLIDER_TRACK,
     backgroundColor: PLAYER_ACCENT,
     borderRadius: 3,
   },
   sliderThumb: {
     position: 'absolute',
-    top: -4,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    top: -((SLIDER_THUMB - SLIDER_TRACK) / 2),
+    width: SLIDER_THUMB,
+    height: SLIDER_THUMB,
+    borderRadius: SLIDER_THUMB / 2,
     backgroundColor: PLAYER_ACCENT,
-    marginLeft: -7,
+    marginLeft: -(SLIDER_THUMB / 2),
     shadowColor: PLAYER_ACCENT,
     shadowOpacity: 0.4,
     shadowRadius: 6,
@@ -73,10 +90,10 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   timeText: {
-    fontSize: 12,
+    fontSize: FontSize.caption,
     fontFamily: 'Inter_400Regular',
     color: PLAYER_MUTED_TEXT,
   },

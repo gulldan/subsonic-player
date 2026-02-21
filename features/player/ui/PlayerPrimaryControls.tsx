@@ -1,8 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
+import { memo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RepeatMode } from '@/features/player/core/domain/types';
-import { PLAYER_ACCENT, PLAYER_CONTROL_SURFACE, PLAYER_CONTROL_SURFACE_ACTIVE } from '@/features/player/ui/constants';
+import {
+  PLAYER_ACCENT,
+  PLAYER_CONTROL_BTN,
+  PLAYER_CONTROL_SURFACE,
+  PLAYER_CONTROL_SURFACE_ACTIVE,
+  PLAYER_MODE_BTN,
+  PLAYER_PLAY_BTN,
+  REPEAT_BADGE,
+} from '@/features/player/ui/constants';
 import Colors from '@/shared/theme/colors';
+import { Spacing } from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -18,7 +29,7 @@ interface PlayerPrimaryControlsProps {
   onRepeat: () => void;
 }
 
-export function PlayerPrimaryControls({
+export const PlayerPrimaryControls = memo(function PlayerPrimaryControls({
   isShuffled,
   repeatMode,
   isLoading,
@@ -80,21 +91,21 @@ export function PlayerPrimaryControls({
       </Pressable>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: 22,
-    gap: 14,
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing['2xl'],
+    gap: Spacing.mlg,
   },
   modeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: PLAYER_MODE_BTN,
+    height: PLAYER_MODE_BTN,
+    borderRadius: PLAYER_MODE_BTN / 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: PLAYER_CONTROL_SURFACE,
@@ -103,16 +114,16 @@ const styles = StyleSheet.create({
     backgroundColor: PLAYER_CONTROL_SURFACE_ACTIVE,
   },
   controlBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: PLAYER_CONTROL_BTN,
+    height: PLAYER_CONTROL_BTN,
+    borderRadius: PLAYER_CONTROL_BTN / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playPauseBtn: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
+    width: PLAYER_PLAY_BTN,
+    height: PLAYER_PLAY_BTN,
+    borderRadius: PLAYER_PLAY_BTN / 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: PLAYER_ACCENT,
@@ -127,14 +138,14 @@ const styles = StyleSheet.create({
     top: -1,
     right: -7,
     backgroundColor: PLAYER_ACCENT,
-    borderRadius: 7,
-    width: 14,
-    height: 14,
+    borderRadius: REPEAT_BADGE / 2,
+    width: REPEAT_BADGE,
+    height: REPEAT_BADGE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   repeatOneText: {
-    fontSize: 8,
+    fontSize: FontSize.xs,
     fontFamily: 'Inter_700Bold',
     color: p.black,
   },

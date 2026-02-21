@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/shared/theme/colors';
+import { Spacing } from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -61,7 +63,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.topButton,
             {
-              top: insets.top + 16,
+              top: insets.top + Spacing.lg,
               backgroundColor: theme.backgroundSecondary,
               opacity: pressed ? 0.8 : 1,
             },
@@ -78,6 +80,8 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
         <Pressable
           onPress={handleRestart}
+          accessibilityLabel="Try again"
+          accessibilityRole="button"
           style={({ pressed }) => [
             styles.button,
             {
@@ -154,29 +158,29 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: Spacing.xxl,
   },
   content: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: Spacing.lg,
     width: '100%',
     maxWidth: 600,
   },
   title: {
-    fontSize: 28,
+    fontSize: FontSize.display,
     fontWeight: '700',
     textAlign: 'center',
     lineHeight: 40,
   },
   message: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     textAlign: 'center',
     lineHeight: 24,
   },
   topButton: {
     position: 'absolute',
-    right: 16,
+    right: Spacing.lg,
     width: 44,
     height: 44,
     borderRadius: 8,
@@ -186,9 +190,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   button: {
-    paddingVertical: 16,
+    paddingVertical: Spacing.lg,
     borderRadius: 8,
-    paddingHorizontal: 24,
+    paddingHorizontal: Spacing.xxl,
     minWidth: 200,
     shadowColor: p.black,
     shadowOffset: {
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: '600',
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
   },
   modalOverlay: {
     flex: 1,
@@ -218,13 +222,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: FontSize.title,
     fontWeight: '600',
   },
   closeButton: {
@@ -237,16 +241,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalScrollContent: {
-    padding: 16,
+    padding: Spacing.lg,
   },
   errorContainer: {
     width: '100%',
     borderRadius: 8,
     overflow: 'hidden',
-    padding: 16,
+    padding: Spacing.lg,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: FontSize.caption,
     lineHeight: 18,
     width: '100%',
   },

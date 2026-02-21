@@ -27,7 +27,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useTrackReactions } from '@/features/player/core/application/useTrackReactions';
 import { usePlayer, usePlayerPosition } from '@/features/player/core/presentation/PlayerProvider';
-import { PLAYER_ACCENT_GLOW, PLAYER_ERROR_SURFACE, PLAYER_GRADIENT } from '@/features/player/ui/constants';
+import {
+  PLAYER_ACCENT_GLOW,
+  PLAYER_ERROR_SURFACE,
+  PLAYER_GLOW_HEIGHT,
+  PLAYER_GLOW_INSET,
+  PLAYER_GRADIENT,
+} from '@/features/player/ui/constants';
 import { runWithLightHaptic } from '@/features/player/ui/haptics';
 import { PlayerArtwork } from '@/features/player/ui/PlayerArtwork';
 import { PlayerPrimaryControls } from '@/features/player/ui/PlayerPrimaryControls';
@@ -36,6 +42,14 @@ import { type PlayerSecondaryAction, PlayerSecondaryActions } from '@/features/p
 import { PlayerTopBar } from '@/features/player/ui/PlayerTopBar';
 import { PlayerTrackInfo } from '@/features/player/ui/PlayerTrackInfo';
 import Colors from '@/shared/theme/colors';
+import {
+  HEADER_TOP_GAP_MD,
+  PLAYER_ART_MARGIN,
+  PLAYER_ART_MAX,
+  Spacing,
+  WEB_HEADER_OFFSET,
+} from '@/shared/theme/spacing';
+import { FontSize } from '@/shared/theme/typography';
 
 const p = Colors.palette;
 
@@ -55,7 +69,7 @@ export default function PlayerScreen() {
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPosition, setSeekPosition] = useState(0);
   const sliderRef = useRef<View>(null);
-  const sliderMetrics = useRef({ x: 0, width: width - 64 });
+  const sliderMetrics = useRef({ x: 0, width: width - PLAYER_ART_MARGIN * 2 });
   const durationRef = useRef(player.duration);
   durationRef.current = player.duration;
 
@@ -77,7 +91,7 @@ export default function PlayerScreen() {
   );
 
   useEffect(() => {
-    sliderMetrics.current.width = width - 64;
+    sliderMetrics.current.width = width - PLAYER_ART_MARGIN * 2;
     requestAnimationFrame(() => refreshSliderMetrics());
   }, [width, refreshSliderMetrics]);
 
@@ -200,6 +214,7 @@ export default function PlayerScreen() {
         key: 'favorite',
         icon: isStarred ? 'heart' : 'heart-outline',
         active: isStarred,
+        accessibilityLabel: isStarred ? 'Remove from favorites' : 'Add to favorites',
         onPress: handleStar,
       },
       {
@@ -208,27 +223,32 @@ export default function PlayerScreen() {
         active: isDisliked,
         activeColor: p.danger,
         activeBackgroundColor: PLAYER_ERROR_SURFACE,
+        accessibilityLabel: isDisliked ? 'Remove dislike' : 'Dislike track',
         onPress: handleDislike,
       },
       {
         key: 'bookmark',
         icon: 'bookmark-outline',
+        accessibilityLabel: 'Save bookmark',
         onPress: handleSaveBookmark,
       },
       {
         key: 'share',
         icon: 'share-social-outline',
+        accessibilityLabel: 'Share track',
         onPress: handleShareTrack,
       },
       {
         key: 'random',
         icon: 'dice-outline',
+        accessibilityLabel: 'Play random track',
         onPress: handleRandom,
       },
       {
         key: 'queue',
         icon: 'list',
         active: player.queue.length > 0,
+        accessibilityLabel: 'View queue',
         onPress: handleOpenQueue,
       },
     ],
@@ -269,11 +289,16 @@ export default function PlayerScreen() {
   const progressRaw = player.duration > 0 ? currentPos / player.duration : 0;
   const progress = Math.max(0, Math.min(1, progressRaw));
   const remaining = player.duration - currentPos;
-  const artSize = Math.min(width - 64, 380);
-  const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
+  const artSize = Math.min(width - PLAYER_ART_MARGIN * 2, PLAYER_ART_MAX);
+  const topPadding = insets.top + (Platform.OS === 'web' ? WEB_HEADER_OFFSET : 0);
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding + 12, paddingBottom: insets.bottom + 20 }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: topPadding + HEADER_TOP_GAP_MD, paddingBottom: insets.bottom + Spacing.xl },
+      ]}
+    >
       <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
       <LinearGradient
         colors={PLAYER_GRADIENT}
@@ -288,7 +313,12 @@ export default function PlayerScreen() {
       <PlayerTrackInfo title={track.title} artist={track.artist} album={track.album} />
 
       {player.loadError ? (
-        <Pressable onPress={player.retryPlay} style={styles.errorBanner}>
+        <Pressable
+          onPress={player.retryPlay}
+          style={styles.errorBanner}
+          accessibilityLabel="Retry playback"
+          accessibilityRole="button"
+        >
           <Ionicons name="alert-circle" size={18} color={p.danger} />
           <Text style={styles.errorText}>{player.loadError}</Text>
           <Ionicons name="refresh" size={18} color={p.danger} />
@@ -329,9 +359,9 @@ const styles = StyleSheet.create({
   accentGlow: {
     position: 'absolute',
     top: -120,
-    left: '15%',
-    right: '15%',
-    height: 260,
+    left: PLAYER_GLOW_INSET,
+    right: PLAYER_GLOW_INSET,
+    height: PLAYER_GLOW_HEIGHT,
     borderRadius: 200,
     backgroundColor: PLAYER_ACCENT_GLOW,
   },
@@ -339,27 +369,27 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: Spacing.lg,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: FontSize.subtitle,
     fontFamily: 'Inter_500Medium',
     color: p.textTertiary,
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 32,
-    marginTop: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    gap: Spacing.sm,
+    marginHorizontal: Spacing.xxxl,
+    marginTop: Spacing.smd,
+    paddingVertical: Spacing.smd,
+    paddingHorizontal: Spacing.mlg,
     backgroundColor: PLAYER_ERROR_SURFACE,
     borderRadius: 12,
   },
   errorText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: FontSize.body2,
     fontFamily: 'Inter_500Medium',
     color: p.danger,
   },
