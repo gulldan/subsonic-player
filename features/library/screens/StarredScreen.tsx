@@ -20,6 +20,7 @@ import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
 
 const p = Colors.palette;
+const SPACER_40 = { width: 40 } as const;
 
 export default function StarredScreen() {
   const { client } = useAuth();
@@ -54,7 +55,7 @@ export default function StarredScreen() {
           <Ionicons name="chevron-back" size={28} color={p.white} />
         </Pressable>
         <Text style={styles.title}>{t('library.starred')}</Text>
-        <View style={{ width: 40 }} />
+        <View style={SPACER_40} />
       </View>
 
       {isLoading ? (

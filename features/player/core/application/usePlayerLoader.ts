@@ -1,15 +1,13 @@
 import type { AudioStatus } from 'expo-audio';
 import { useCallback, useEffect } from 'react';
+import { stopHandleSafely } from '@/features/player/core/application/session/AudioSessionCoordinator';
 import { IS_WEB } from '@/features/player/core/domain/constants';
 import { mapLoadError } from '@/features/player/core/domain/errors';
 import { resolveNextQueueIndex } from '@/features/player/core/domain/playback';
-import type { AudioHandle, RepeatMode } from '@/features/player/core/domain/types';
+import type { AudioHandle, RefObject, RepeatMode, StateSetter } from '@/features/player/core/domain/types';
 import { createNativeAudio, createWebAudio } from '@/features/player/core/infrastructure/audio/audioHandles';
 import type { SubsonicClient } from '@/shared/api/subsonic/subsonic';
 import type { Song } from '@/shared/api/subsonic/types';
-
-type RefObject<T> = { current: T };
-type StateSetter<T> = (value: T | ((prev: T) => T)) => void;
 
 interface UsePlayerLoaderArgs {
   client: SubsonicClient | null;
@@ -179,12 +177,7 @@ export function usePlayerLoader({
         }
 
         if (thisLoadId !== loadIdRef.current || !sessionCoordinatorRef.current.isActive(sessionId)) {
-          try {
-            handle.pause();
-          } catch {}
-          try {
-            handle.destroy();
-          } catch {}
+          stopHandleSafely(handle);
           return;
         }
 

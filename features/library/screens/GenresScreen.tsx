@@ -7,7 +7,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { useQuery } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { type Href, router, Stack } from 'expo-router';
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -35,10 +35,7 @@ export default function GenresScreen() {
   const sortedGenres = [...genres].sort((a, b) => a.value.localeCompare(b.value));
   const topPadding = insets.top + (Platform.OS === 'web' ? 67 : 0);
   const handleGenrePress = (genre: Genre) => {
-    router.push({
-      pathname: '/genre/[name]',
-      params: { name: encodeURIComponent(genre.value) },
-    } as any);
+    router.push(`/genre/${encodeURIComponent(genre.value)}` as Href);
   };
 
   return (

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/shared/i18n';
@@ -45,7 +45,7 @@ export default function LibraryScreen() {
         {categories.map((cat) => (
           <Pressable
             key={cat.route}
-            onPress={() => router.push(cat.route as any)}
+            onPress={() => router.push(cat.route as Href)}
             style={({ pressed }) => [styles.categoryRow, pressed && { opacity: 0.6 }]}
           >
             <Ionicons name={cat.icon} size={22} color={p.accent} />

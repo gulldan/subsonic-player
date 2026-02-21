@@ -5,7 +5,7 @@ interface ManagedAudioHandle {
   destroy: () => void;
 }
 
-function stopHandleSafely(handle: ManagedAudioHandle): void {
+export function stopHandleSafely(handle: ManagedAudioHandle): void {
   try {
     handle.pause();
   } catch {}

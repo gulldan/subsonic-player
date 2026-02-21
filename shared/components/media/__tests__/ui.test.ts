@@ -6,7 +6,7 @@ mock.module('react-native', () => ({
   Platform: { OS: 'ios' },
   PixelRatio: { get: () => 2 },
   Pressable: () => null,
-  StyleSheet: { create: (s: any) => s },
+  StyleSheet: { create: (s: Record<string, unknown>) => s },
   Text: () => null,
   View: () => null,
 }));

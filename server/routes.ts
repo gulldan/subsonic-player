@@ -140,8 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const text = await response.text();
       return res.status(response.status).send(text);
-    } catch (error: any) {
-      console.error('Subsonic proxy error:', error?.message);
+    } catch (error: unknown) {
+      console.error('Subsonic proxy error:', error instanceof Error ? error.message : error);
       return res.status(502).json({ error: 'Failed to connect to Subsonic server' });
     }
   });

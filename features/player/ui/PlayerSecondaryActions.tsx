@@ -7,7 +7,7 @@ const p = Colors.palette;
 
 export interface PlayerSecondaryAction {
   key: string;
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   active?: boolean;
   activeColor?: string;
   inactiveColor?: string;
@@ -31,7 +31,7 @@ export function PlayerSecondaryActions({ actions }: { actions: PlayerSecondaryAc
 
         return (
           <Pressable key={action.key} onPress={action.onPress} style={[styles.bottomBtn, action.active && activeStyle]}>
-            <Ionicons name={action.icon as any} size={22} color={iconColor} />
+            <Ionicons name={action.icon} size={22} color={iconColor} />
           </Pressable>
         );
       })}

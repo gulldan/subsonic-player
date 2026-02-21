@@ -50,12 +50,12 @@ function getDeviceLocale(): Locale {
   }
 }
 
-function getNestedValue(obj: Record<string, any>, path: string): string {
+function getNestedValue(obj: Record<string, unknown>, path: string): string {
   const keys = path.split('.');
-  let current: any = obj;
+  let current: unknown = obj;
   for (const key of keys) {
     if (current === undefined || current === null) return path;
-    current = current[key];
+    current = (current as Record<string, unknown>)[key];
   }
   return typeof current === 'string' ? current : path;
 }
@@ -93,7 +93,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string): string => {
-      return getNestedValue(translations[locale] as unknown as Record<string, any>, key);
+      return getNestedValue(translations[locale] as unknown as Record<string, unknown>, key);
     },
     [locale],
   );

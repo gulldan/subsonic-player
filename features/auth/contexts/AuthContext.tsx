@@ -112,8 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           secureSet(STORE_KEYS.username, username),
           secureSet(STORE_KEYS.password, password),
         ]);
-      } catch (storeErr: any) {
-        console.warn('AuthContext: SecureStore save failed (non-fatal):', storeErr?.message);
+      } catch (storeErr: unknown) {
+        console.warn(
+          'AuthContext: SecureStore save failed (non-fatal):',
+          storeErr instanceof Error ? storeErr.message : storeErr,
+        );
       }
 
       clientRef.current = selectedClient;
@@ -121,8 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsConnected(true);
       setIsLoading(false);
       return true;
-    } catch (err: any) {
-      console.error('AuthContext: connect error:', err?.message);
+    } catch (err: unknown) {
+      console.error('AuthContext: connect error:', err instanceof Error ? err.message : err);
       setIsLoading(false);
       return false;
     }

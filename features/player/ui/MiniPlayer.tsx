@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useTrackReactions } from '@/features/player/core/application/useTrackReactions';
@@ -103,7 +103,7 @@ export const MiniPlayer = memo(function MiniPlayer({
 
 const styles = StyleSheet.create({
   miniPlayer: {
-    position: 'absolute' as const,
+    position: 'absolute',
     left: 8,
     right: 8,
     height: 64,
@@ -113,23 +113,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingRight: 4,
     overflow: 'hidden',
-    ...(Platform.OS === 'web'
-      ? {
-          boxShadow: `0 -2px 20px ${PLAYER_SHADOW}`,
-        }
-      : {
-          shadowColor: p.black,
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.32,
-          shadowRadius: 12,
-          elevation: 16,
-        }),
-  } as any,
-  miniBackground: {
-    ...StyleSheet.absoluteFillObject,
+    ...Platform.select<ViewStyle>({
+      web: {
+        boxShadow: `0 -2px 20px ${PLAYER_SHADOW}`,
+      },
+      default: {
+        shadowColor: p.black,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.32,
+        shadowRadius: 12,
+        elevation: 16,
+      },
+    }),
   },
+  miniBackground: StyleSheet.absoluteFillObject,
   miniProgressBar: {
-    position: 'absolute' as const,
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,

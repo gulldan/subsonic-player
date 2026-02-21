@@ -1,7 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { memo, useEffect, useState } from 'react';
-import { PixelRatio, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  type DimensionValue,
+  PixelRatio,
+  Pressable,
+  type StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -98,9 +107,9 @@ export const TrackItem = memo(function TrackItem({
     >
       {showArt ? (
         <CoverArt coverArtId={song.coverArt} size={40} borderRadius={6} />
-      ) : index != null ? (
-        <Text style={styles.trackIndex}>{index}</Text>
-      ) : null}
+      ) : (
+        index != null && <Text style={styles.trackIndex}>{index}</Text>
+      )}
       <View style={styles.trackInfo}>
         <Text style={[styles.trackTitle, isActive && styles.trackTitleActive]} numberOfLines={1}>
           {song.title}
@@ -203,10 +212,10 @@ export function Shimmer({
   borderRadius = 0,
   style,
 }: {
-  width: number | string;
+  width: DimensionValue;
   height: number;
   borderRadius?: number;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }) {
   const opacity = useSharedValue(0.3);
 
@@ -238,10 +247,10 @@ export function Shimmer({
   );
 }
 
-export function EmptyState({ icon, message }: { icon: string; message: string }) {
+export function EmptyState({ icon, message }: { icon: keyof typeof Ionicons.glyphMap; message: string }) {
   return (
     <View style={styles.emptyState}>
-      <Ionicons name={icon as any} size={48} color={p.textTertiary} />
+      <Ionicons name={icon} size={48} color={p.textTertiary} />
       <Text style={styles.emptyMessage}>{message}</Text>
     </View>
   );

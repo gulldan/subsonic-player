@@ -1,5 +1,5 @@
 export function mapLoadError(error: unknown): string {
-  const message = String((error as any)?.message ?? error ?? '');
+  const message = error instanceof Error ? error.message : String(error ?? '');
   if (message.includes('429') || message.toLowerCase().includes('rate limit')) {
     return 'Server rate limit reached. Try again shortly.';
   }

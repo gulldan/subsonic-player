@@ -5,11 +5,8 @@ import {
   resolveRandomQueueIndex,
 } from '@/features/player/core/domain/playback';
 import { shuffleArray } from '@/features/player/core/domain/queue';
-import type { AudioHandle } from '@/features/player/core/domain/types';
+import type { AudioHandle, RefObject, StateSetter } from '@/features/player/core/domain/types';
 import type { Song } from '@/shared/api/subsonic/types';
-
-type RefObject<T> = { current: T };
-type StateSetter<T> = (value: T | ((prev: T) => T)) => void;
 
 interface UsePlayerTransportActionsArgs {
   getActiveQueue: () => Song[];

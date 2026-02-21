@@ -41,6 +41,9 @@ export interface AudioHandle {
   getIsPlaying: () => boolean;
 }
 
+export type RefObject<T> = { current: T };
+export type StateSetter<T> = (value: T | ((prev: T) => T)) => void;
+
 export interface PositionStore {
   subscribe: (cb: () => void) => () => void;
   getSnapshot: () => number;

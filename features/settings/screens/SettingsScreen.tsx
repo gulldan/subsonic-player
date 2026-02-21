@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     color: p.textSecondary,
-    textTransform: 'uppercase' as const,
+    textTransform: 'uppercase',
     letterSpacing: 0.8,
     paddingHorizontal: 20,
     marginBottom: 8,

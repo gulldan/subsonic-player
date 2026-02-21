@@ -21,6 +21,7 @@ import { useI18n } from '@/shared/i18n';
 import Colors from '@/shared/theme/colors';
 
 const p = Colors.palette;
+const SPACER_40 = { width: 40 } as const;
 
 export default function GenreDetailScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
@@ -57,7 +58,7 @@ export default function GenreDetailScreen() {
         <Text style={styles.title} numberOfLines={1}>
           {genreName || t('album.genre')}
         </Text>
-        <View style={{ width: 40 }} />
+        <View style={SPACER_40} />
       </View>
 
       {isLoading ? (

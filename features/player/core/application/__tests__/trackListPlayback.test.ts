@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type * as Haptics from 'expo-haptics';
 import {
   playAllFromQueue,
   playOrToggleTrack,
@@ -39,7 +40,7 @@ function createHapticsMock() {
 
   const haptics = {
     ImpactFeedbackStyle: {
-      Medium: 'medium' as any,
+      Medium: 'medium' as Haptics.ImpactFeedbackStyle,
     },
     impactAsync: async () => {
       calls.impact += 1;
