@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sonicwave/app/app.dart';
-import 'package:flutter_sonicwave/app/router/app_router.dart';
+import 'package:flutter_sonicwave/features/auth/domain/server_profile.dart';
 import 'package:flutter_sonicwave/features/auth/presentation/app_session.dart';
 import 'package:flutter_sonicwave/features/player/presentation/player_view_model.dart';
 import 'package:flutter_sonicwave/features/subsonic/data/subsonic_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:macos_ui/macos_ui.dart';
 
 import 'support/fakes.dart';
 
 void main() {
   testWidgets('shows login form when user is signed out', (tester) async {
     final store = InMemoryServerProfileStore();
-    final fakeApi = FakeSubsonicApi(pingResult: true);
+    final fakeApi = FakeSubsonicApi();
     final session = AppSession(
       profileStore: store,
       clientFactory: (_) => fakeApi,
@@ -24,7 +25,6 @@ void main() {
     final app = SonicWaveApp(
       session: session,
       playerViewModel: playerViewModel,
-      router: buildRouter(session),
     );
 
     await tester.pumpWidget(app);
@@ -35,12 +35,153 @@ void main() {
     expect(find.text('Server URL'), findsOneWidget);
   });
 
+  testWidgets('shows bootstrap screen before restoring persisted session', (
+    tester,
+  ) async {
+    final store = InMemoryServerProfileStore()
+      ..profile = const ServerProfile(
+        baseUrl: 'https://demo.navidrome.org',
+        username: 'demo',
+        password: 'demo',
+      );
+    final fakeApi = FakeSubsonicApi(
+      randomSongs: const [
+        SubsonicSong(
+          id: 'boot-song',
+          title: 'Boot Track',
+          artist: 'Boot Artist',
+          duration: Duration(minutes: 3),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      SonicWaveApp(
+        profileStore: store,
+        clientFactory: (_) => fakeApi,
+        playerViewModel: PlayerViewModel(audioEngine: FakePlayerAudioEngine()),
+      ),
+    );
+
+    expect(find.text('Restoring session...'), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quick play'), findsOneWidget);
+    expect(find.text('Boot Track'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('renders macos scaffold when macos UI mode is enabled', (
+    tester,
+  ) async {
+    final store = InMemoryServerProfileStore();
+    final fakeApi = FakeSubsonicApi(
+      randomSongs: const [
+        SubsonicSong(
+          id: 'm1',
+          title: 'Mac Track',
+          artist: 'Native Artist',
+          duration: Duration(minutes: 4),
+        ),
+      ],
+    );
+    final session = AppSession(
+      profileStore: store,
+      clientFactory: (_) => fakeApi,
+    );
+    await session.bootstrap();
+    final playerViewModel = PlayerViewModel(
+      audioEngine: FakePlayerAudioEngine(),
+    );
+
+    final app = SonicWaveApp(
+      session: session,
+      playerViewModel: playerViewModel,
+      useMacosUi: true,
+    );
+
+    await tester.pumpWidget(app);
+    await tester.pumpAndSettle();
+    expect(find.byType(MacosScaffold), findsOneWidget);
+
+    await session.signIn(
+      serverUrl: 'https://demo.navidrome.org',
+      username: 'demo',
+      password: 'demo',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MacosScaffold), findsOneWidget);
+    expect(find.text('Good afternoon'), findsOneWidget);
+    expect(find.byType(ToolBar), findsNothing);
+    expect(find.text('Native macOS tuned UI'), findsNothing);
+  });
+
+  testWidgets('renders wide macos layout with sidebar navigation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1720, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final store = InMemoryServerProfileStore();
+    final fakeApi = FakeSubsonicApi(
+      randomSongs: const [
+        SubsonicSong(
+          id: 'mw1',
+          title: 'Wide Track',
+          artist: 'Wide Artist',
+          duration: Duration(minutes: 5),
+        ),
+      ],
+    );
+    final session = AppSession(
+      profileStore: store,
+      clientFactory: (_) => fakeApi,
+    );
+    await session.bootstrap();
+    final playerViewModel = PlayerViewModel(
+      audioEngine: FakePlayerAudioEngine(),
+    );
+
+    final app = SonicWaveApp(
+      session: session,
+      playerViewModel: playerViewModel,
+      useMacosUi: true,
+    );
+
+    await tester.pumpWidget(app);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Subsonic access with a calmer, sharper shell.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Design primitives now live outside feature code'),
+      findsOneWidget,
+    );
+
+    await session.signIn(
+      serverUrl: 'https://demo.navidrome.org',
+      username: 'demo',
+      password: 'demo',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SidebarItems), findsOneWidget);
+    expect(find.text('Home'), findsAtLeastNWidgets(1));
+    expect(find.text('Wide Track'), findsAtLeastNWidgets(1));
+  });
+
   testWidgets('navigates to desktop shell after successful sign in', (
     tester,
   ) async {
     final store = InMemoryServerProfileStore();
     final fakeApi = FakeSubsonicApi(
-      pingResult: true,
       randomSongs: const [
         SubsonicSong(
           id: '123',
@@ -63,7 +204,6 @@ void main() {
     final app = SonicWaveApp(
       session: session,
       playerViewModel: playerViewModel,
-      router: buildRouter(session),
     );
 
     await tester.pumpWidget(app);
@@ -77,7 +217,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Quick Picks'), findsOneWidget);
+    expect(find.text('Quick play'), findsOneWidget);
     expect(find.text('Synthwave Ride'), findsAtLeastNWidgets(1));
     expect(find.text('Night Driver'), findsAtLeastNWidgets(1));
   });
@@ -99,13 +239,14 @@ void main() {
     final app = SonicWaveApp(
       session: session,
       playerViewModel: playerViewModel,
-      router: buildRouter(session),
     );
 
     await tester.pumpWidget(app);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Connect and open player'));
+    final submitButton = find.text('Connect and open player');
+    await tester.ensureVisible(submitButton);
+    await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Technical details'), findsOneWidget);
@@ -146,7 +287,6 @@ void main() {
     final app = SonicWaveApp(
       session: session,
       playerViewModel: playerViewModel,
-      router: buildRouter(session),
     );
 
     await tester.pumpWidget(app);
@@ -160,8 +300,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Desktop Track'), findsAtLeastNWidgets(1));
-    expect(find.text('Collections'), findsAtLeastNWidgets(1));
-    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(find.text('Library'), findsAtLeastNWidgets(1));
+    expect(find.text('Now Playing'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('desktop shell supports navigation and player actions', (
@@ -222,7 +362,6 @@ void main() {
     final app = SonicWaveApp(
       session: session,
       playerViewModel: playerViewModel,
-      router: buildRouter(session),
     );
 
     await tester.pumpWidget(app);
@@ -235,11 +374,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Now Playing'), findsOneWidget);
+    expect(find.text('Home'), findsAtLeastNWidgets(1));
 
-    await tester.tap(find.text('Collections').first);
+    await tester.tap(find.text('Library').first);
     await tester.pumpAndSettle();
-    expect(find.text('Albums'), findsOneWidget);
+    expect(find.text('Tracks'), findsAtLeastNWidgets(1));
 
     await tester.tap(find.text('Playlists').first);
     await tester.pumpAndSettle();
@@ -249,22 +388,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Settings'), findsAtLeastNWidgets(1));
 
-    await tester.tap(find.text('Music').first);
+    await tester.tap(find.text('Now Playing').first);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.favorite_border_rounded).first);
+    final likeTrack = find.text('Like').first;
+    await tester.ensureVisible(likeTrack);
+    await tester.tap(likeTrack);
     await tester.pumpAndSettle();
     expect(fakeApi.starCount, 1);
 
-    await tester.tap(find.byIcon(Icons.favorite_rounded).first);
+    final unlikeTrack = find.text('Liked').first;
+    await tester.ensureVisible(unlikeTrack);
+    await tester.tap(unlikeTrack);
     await tester.pumpAndSettle();
     expect(fakeApi.unstarCount, 1);
 
-    await tester.tap(find.byIcon(Icons.star_outline_rounded).first);
+    final rateTrack = find.byIcon(Icons.star_outline_rounded).first;
+    await tester.ensureVisible(rateTrack);
+    await tester.tap(rateTrack);
     await tester.pumpAndSettle();
     expect(fakeApi.ratingCount, greaterThan(0));
 
-    await tester.tap(find.byIcon(Icons.thumb_down_alt_outlined).first);
+    final dislikeTrack = find.text('Dislike').first;
+    await tester.ensureVisible(dislikeTrack);
+    await tester.tap(dislikeTrack);
     await tester.pumpAndSettle();
     expect(fakeApi.lastRating, 1);
   });

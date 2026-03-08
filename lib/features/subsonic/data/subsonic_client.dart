@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -6,7 +7,9 @@ import 'package:flutter_sonicwave/features/subsonic/data/subsonic_api_exception.
 import 'package:flutter_sonicwave/features/subsonic/data/subsonic_auth.dart';
 import 'package:http/http.dart' as http;
 
+/// Lightweight song model returned by the Subsonic API.
 class SubsonicSong {
+  /// Creates a song DTO.
   const SubsonicSong({
     required this.id,
     required this.title,
@@ -19,16 +22,7 @@ class SubsonicSong {
     this.rating = 0,
   });
 
-  final String id;
-  final String title;
-  final String artist;
-  final Duration duration;
-  final String? coverArt;
-  final String? albumId;
-  final String? artistId;
-  final bool isStarred;
-  final int rating;
-
+  /// Creates a song DTO from a Subsonic JSON payload.
   factory SubsonicSong.fromJson(Map<String, dynamic> json) {
     final durationRaw = json['duration'];
     final seconds = durationRaw is int
@@ -51,9 +45,38 @@ class SubsonicSong {
       rating: rating,
     );
   }
+
+  /// Song identifier.
+  final String id;
+
+  /// Display title.
+  final String title;
+
+  /// Display artist.
+  final String artist;
+
+  /// Track duration.
+  final Duration duration;
+
+  /// Cover art identifier.
+  final String? coverArt;
+
+  /// Album identifier.
+  final String? albumId;
+
+  /// Artist identifier.
+  final String? artistId;
+
+  /// Whether the user starred the song.
+  final bool isStarred;
+
+  /// User rating in the 0..5 range.
+  final int rating;
 }
 
+/// Lightweight album model returned by the Subsonic API.
 class SubsonicAlbum {
+  /// Creates an album DTO.
   const SubsonicAlbum({
     required this.id,
     required this.name,
@@ -62,12 +85,7 @@ class SubsonicAlbum {
     this.coverArtId,
   });
 
-  final String id;
-  final String name;
-  final String artist;
-  final int songCount;
-  final String? coverArtId;
-
+  /// Creates an album DTO from a Subsonic JSON payload.
   factory SubsonicAlbum.fromJson(Map<String, dynamic> json) {
     final countRaw = json['songCount'];
     final count = countRaw is int
@@ -85,9 +103,26 @@ class SubsonicAlbum {
       coverArtId: json['coverArt'] as String?,
     );
   }
+
+  /// Album identifier.
+  final String id;
+
+  /// Album title.
+  final String name;
+
+  /// Album artist.
+  final String artist;
+
+  /// Number of tracks in the album.
+  final int songCount;
+
+  /// Cover art identifier.
+  final String? coverArtId;
 }
 
+/// Lightweight playlist model returned by the Subsonic API.
 class SubsonicPlaylist {
+  /// Creates a playlist DTO.
   const SubsonicPlaylist({
     required this.id,
     required this.name,
@@ -97,13 +132,7 @@ class SubsonicPlaylist {
     this.coverArtId,
   });
 
-  final String id;
-  final String name;
-  final int songCount;
-  final Duration duration;
-  final String? owner;
-  final String? coverArtId;
-
+  /// Creates a playlist DTO from a Subsonic JSON payload.
   factory SubsonicPlaylist.fromJson(Map<String, dynamic> json) {
     final countRaw = json['songCount'];
     final durationRaw = json['duration'];
@@ -124,9 +153,29 @@ class SubsonicPlaylist {
       coverArtId: json['coverArt'] as String?,
     );
   }
+
+  /// Playlist identifier.
+  final String id;
+
+  /// Playlist name.
+  final String name;
+
+  /// Number of songs in the playlist.
+  final int songCount;
+
+  /// Total playlist duration.
+  final Duration duration;
+
+  /// Playlist owner, if provided by the server.
+  final String? owner;
+
+  /// Cover art identifier.
+  final String? coverArtId;
 }
 
+/// Contract used by the app to communicate with a Subsonic server.
 abstract class SubsonicApi {
+  /// Calls a raw Subsonic endpoint and returns the decoded root payload.
   Future<Map<String, dynamic>> call(
     String endpoint, {
     Map<String, Object?> params,
@@ -134,40 +183,72 @@ abstract class SubsonicApi {
     bool includeFormat,
   });
 
+  /// Verifies that the server is reachable and credentials are valid.
   Future<bool> ping();
+
+  /// Returns a random song selection.
   Future<List<SubsonicSong>> getRandomSongs({int size});
+
+  /// Returns albums from the requested album list category.
   Future<List<SubsonicAlbum>> getAlbumList2({
     String type,
     int size,
     int offset,
     String? musicFolderId,
   });
+
+  /// Returns playlists visible to the current user.
   Future<List<SubsonicPlaylist>> getPlaylists({String? username});
+
+  /// Returns songs from a playlist.
   Future<List<SubsonicSong>> getPlaylistSongs(String playlistId);
+
+  /// Returns songs for an album.
   Future<List<SubsonicSong>> getAlbumSongs(String albumId);
+
+  /// Searches songs matching the given query.
   Future<List<SubsonicSong>> searchSongs(String query, {int count});
+
+  /// Stars a song for the current user.
   Future<void> star(String songId);
+
+  /// Removes the star from a song for the current user.
   Future<void> unstar(String songId);
+
+  /// Sets the user rating for a song.
   Future<void> setRating({required String songId, required int rating});
+
+  /// Sends a scrobble event for a song.
   Future<void> scrobble(String songId, {bool submission, int? time});
+
+  /// Builds the cover-art URL for the given identifier.
   Uri getCoverArtUri(String coverArtId, {int? size});
+
+  /// Builds the stream URL for the given song identifier.
   Uri getStreamUri(String songId, {Map<String, Object?> params});
+
+  /// Closes any owned resources.
   void close();
 }
 
+/// Creates a configured [SubsonicApi] for the given authenticated profile.
 typedef SubsonicClientFactory = SubsonicApi Function(ServerProfile profile);
 
+/// HTTP implementation of [SubsonicApi].
 class SubsonicClient implements SubsonicApi {
+  /// Creates an HTTP Subsonic client for [ServerProfile].
   SubsonicClient(
     this._profile, {
     http.Client? httpClient,
     Random? random,
     String clientName = 'SonicWaveFlutter',
     String apiVersion = '1.16.1',
+    Duration requestTimeout = const Duration(seconds: 12),
   }) : _httpClient = httpClient ?? http.Client(),
        _clientName = clientName,
        _apiVersion = apiVersion,
        _salt = generateSalt(random: random),
+       _requestTimeout = requestTimeout,
        _ownsHttpClient = httpClient == null {
     _token = buildToken(password: _profile.password, salt: _salt);
   }
@@ -177,6 +258,7 @@ class SubsonicClient implements SubsonicApi {
   final String _clientName;
   final String _apiVersion;
   final String _salt;
+  final Duration _requestTimeout;
   final bool _ownsHttpClient;
   late final String _token;
 
@@ -196,10 +278,19 @@ class SubsonicClient implements SubsonicApi {
       includeFormat: includeFormat,
     );
 
-    final response = await _httpClient.get(uri);
+    late final http.Response response;
+    try {
+      response = await _httpClient.get(uri).timeout(_requestTimeout);
+    } on TimeoutException {
+      throw SubsonicApiException(
+        'Request timed out after ${_requestTimeout.inSeconds}s while '
+        'calling $endpoint',
+      );
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw SubsonicApiException(
-        'HTTP ${response.statusCode}: ${response.reasonPhrase ?? 'Request failed'}',
+        'HTTP ${response.statusCode}: '
+        "${response.reasonPhrase ?? 'Request failed'}",
       );
     }
 
@@ -409,14 +500,16 @@ class SubsonicClient implements SubsonicApi {
       if (value is List) {
         for (final item in value) {
           queryParts.add(
-            '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(item.toString())}',
+            '${Uri.encodeQueryComponent(entry.key)}='
+            '${Uri.encodeQueryComponent(item.toString())}',
           );
         }
         continue;
       }
 
       queryParts.add(
-        '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(value.toString())}',
+        '${Uri.encodeQueryComponent(entry.key)}='
+        '${Uri.encodeQueryComponent(value.toString())}',
       );
     }
 

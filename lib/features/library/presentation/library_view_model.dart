@@ -5,43 +5,68 @@ import 'package:flutter_sonicwave/features/auth/presentation/app_session.dart';
 import 'package:flutter_sonicwave/features/player/presentation/player_view_model.dart';
 import 'package:flutter_sonicwave/features/subsonic/data/subsonic_client.dart';
 
+/// Loads library content and coordinates it with the player queue.
 class LibraryViewModel extends ChangeNotifier {
   AppSession? _session;
   PlayerViewModel? _player;
+  Future<void>? _dashboardLoadOperation;
 
   bool _loadingDashboard = false;
+
+  /// Whether the dashboard sections are being refreshed.
   bool get loadingDashboard => _loadingDashboard;
 
   bool _loadingPlaylistDetails = false;
+
+  /// Whether playlist track details are being loaded.
   bool get loadingPlaylistDetails => _loadingPlaylistDetails;
 
   bool _searching = false;
+
+  /// Whether a search request is in flight.
   bool get searching => _searching;
 
   String? _errorMessage;
+
+  /// Last user-visible error produced by the library flow.
   String? get errorMessage => _errorMessage;
 
   List<SubsonicSong> _featuredSongs = const [];
+
+  /// Featured songs shown on the dashboard.
   List<SubsonicSong> get featuredSongs => _featuredSongs;
 
   List<SubsonicAlbum> _albums = const [];
+
+  /// Albums shown in collections sections.
   List<SubsonicAlbum> get albums => _albums;
 
   List<SubsonicPlaylist> _playlists = const [];
+
+  /// Available playlists for the current account.
   List<SubsonicPlaylist> get playlists => _playlists;
 
   String? _selectedPlaylistId;
+
+  /// Identifier of the currently selected playlist.
   String? get selectedPlaylistId => _selectedPlaylistId;
 
   List<SubsonicSong> _selectedPlaylistSongs = const [];
+
+  /// Tracks for the selected playlist.
   List<SubsonicSong> get selectedPlaylistSongs => _selectedPlaylistSongs;
 
   List<SubsonicSong> _searchResults = const [];
+
+  /// Search results for the current query.
   List<SubsonicSong> get searchResults => _searchResults;
 
   String _searchQuery = '';
+
+  /// Last submitted search query.
   String get searchQuery => _searchQuery;
 
+  /// Attaches session and player dependencies.
   void attach({required AppSession session, required PlayerViewModel player}) {
     if (identical(_session, session) && identical(_player, player)) {
       return;
@@ -55,16 +80,19 @@ class LibraryViewModel extends ChangeNotifier {
     _handleSessionChanged();
   }
 
+  /// Reloads dashboard content from the server.
   Future<void> refresh() async {
     await _loadDashboard(forceReload: true);
   }
 
+  /// Searches the server for tracks matching [query].
   Future<void> search(String query) async {
     final trimmed = query.trim();
     _searchQuery = trimmed;
 
     if (trimmed.isEmpty) {
       _searching = false;
+      _errorMessage = null;
       _searchResults = const [];
       notifyListeners();
       return;
@@ -76,6 +104,7 @@ class LibraryViewModel extends ChangeNotifier {
     }
 
     _searching = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -89,6 +118,7 @@ class LibraryViewModel extends ChangeNotifier {
     }
   }
 
+  /// Starts playback from the featured songs list.
   Future<void> playFeaturedFrom(int index) async {
     if (index < 0 || index >= _featuredSongs.length) {
       return;
@@ -100,6 +130,7 @@ class LibraryViewModel extends ChangeNotifier {
     );
   }
 
+  /// Starts playback from the search results list.
   Future<void> playSearchResultFrom(int index) async {
     if (index < 0 || index >= _searchResults.length) {
       return;
@@ -111,6 +142,7 @@ class LibraryViewModel extends ChangeNotifier {
     );
   }
 
+  /// Starts playback from the selected playlist.
   Future<void> playPlaylistSongFrom(int index) async {
     if (index < 0 || index >= _selectedPlaylistSongs.length) {
       return;
@@ -122,6 +154,7 @@ class LibraryViewModel extends ChangeNotifier {
     );
   }
 
+  /// Loads an album and starts playback from its first track.
   Future<void> playAlbum(SubsonicAlbum album) async {
     final client = _session?.client;
     if (client == null) {
@@ -135,7 +168,6 @@ class LibraryViewModel extends ChangeNotifier {
       }
       await _player?.setQueueFromSubsonicSongs(
         songs,
-        startIndex: 0,
         autoPlay: true,
       );
     } on Object catch (error) {
@@ -144,8 +176,18 @@ class LibraryViewModel extends ChangeNotifier {
     }
   }
 
+  /// Loads the selected playlist details.
   Future<void> selectPlaylist(String playlistId) async {
-    if (_selectedPlaylistId == playlistId &&
+    await _selectPlaylist(playlistId);
+  }
+
+  Future<void> _selectPlaylist(
+    String playlistId, {
+    bool forceReload = false,
+    bool clearCurrent = true,
+  }) async {
+    if (!forceReload &&
+        _selectedPlaylistId == playlistId &&
         _selectedPlaylistSongs.isNotEmpty) {
       return;
     }
@@ -157,7 +199,9 @@ class LibraryViewModel extends ChangeNotifier {
 
     _selectedPlaylistId = playlistId;
     _loadingPlaylistDetails = true;
-    _selectedPlaylistSongs = const [];
+    if (clearCurrent) {
+      _selectedPlaylistSongs = const [];
+    }
     notifyListeners();
 
     try {
@@ -177,12 +221,25 @@ class LibraryViewModel extends ChangeNotifier {
       return;
     }
     if (_loadingDashboard) {
+      await (_dashboardLoadOperation ?? Future<void>.value());
       return;
     }
     if (!forceReload && _featuredSongs.isNotEmpty && _albums.isNotEmpty) {
       return;
     }
 
+    final loadOperation = _performDashboardLoad(
+      client,
+      forceReload: forceReload,
+    );
+    _dashboardLoadOperation = loadOperation;
+    await loadOperation;
+  }
+
+  Future<void> _performDashboardLoad(
+    SubsonicApi client, {
+    required bool forceReload,
+  }) async {
     _loadingDashboard = true;
     _errorMessage = null;
     notifyListeners();
@@ -202,14 +259,25 @@ class LibraryViewModel extends ChangeNotifier {
       _albums = results[1] as List<SubsonicAlbum>;
       _playlists = results[2] as List<SubsonicPlaylist>;
 
-      if (_playlists.isNotEmpty) {
-        final firstPlaylistId = _playlists.first.id;
-        await selectPlaylist(firstPlaylistId);
+      if (_player?.track == null && _featuredSongs.isNotEmpty) {
+        await _player?.setQueueFromSubsonicSongs(
+          _featuredSongs,
+        );
+      }
+
+      final selectedPlaylistId = _resolveSelectedPlaylistId();
+      if (selectedPlaylistId != null) {
+        await _selectPlaylist(
+          selectedPlaylistId,
+          forceReload: forceReload,
+          clearCurrent: selectedPlaylistId != _selectedPlaylistId,
+        );
       }
     } on Object catch (error) {
       _errorMessage = 'Could not load library data: $error';
     } finally {
       _loadingDashboard = false;
+      _dashboardLoadOperation = null;
       notifyListeners();
     }
   }
@@ -221,6 +289,7 @@ class LibraryViewModel extends ChangeNotifier {
     }
 
     _loadingDashboard = false;
+    _dashboardLoadOperation = null;
     _loadingPlaylistDetails = false;
     _searching = false;
     _errorMessage = null;
@@ -232,6 +301,20 @@ class LibraryViewModel extends ChangeNotifier {
     _searchResults = const [];
     _searchQuery = '';
     notifyListeners();
+  }
+
+  String? _resolveSelectedPlaylistId() {
+    if (_playlists.isEmpty) {
+      return null;
+    }
+
+    final currentId = _selectedPlaylistId;
+    if (currentId == null) {
+      return _playlists.first.id;
+    }
+
+    final hasCurrent = _playlists.any((playlist) => playlist.id == currentId);
+    return hasCurrent ? currentId : _playlists.first.id;
   }
 
   @override

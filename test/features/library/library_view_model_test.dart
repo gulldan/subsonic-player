@@ -47,11 +47,11 @@ void main() {
       profileStore: InMemoryServerProfileStore(),
       clientFactory: (_) => api,
     );
-    final player = PlayerViewModel(audioEngine: FakePlayerAudioEngine());
-    player.attachSession(session);
+    final player = PlayerViewModel(audioEngine: FakePlayerAudioEngine())
+      ..attachSession(session);
 
-    final library = LibraryViewModel();
-    library.attach(session: session, player: player);
+    final library = LibraryViewModel()
+      ..attach(session: session, player: player);
 
     await session.signIn(
       serverUrl: 'https://demo.navidrome.org',
@@ -86,11 +86,11 @@ void main() {
         profileStore: InMemoryServerProfileStore(),
         clientFactory: (_) => api,
       );
-      final player = PlayerViewModel(audioEngine: audio);
-      player.attachSession(session);
+      final player = PlayerViewModel(audioEngine: audio)
+        ..attachSession(session);
 
-      final library = LibraryViewModel();
-      library.attach(session: session, player: player);
+      final library = LibraryViewModel()
+        ..attach(session: session, player: player);
 
       await session.signIn(
         serverUrl: 'https://demo.navidrome.org',
@@ -138,11 +138,11 @@ void main() {
         profileStore: InMemoryServerProfileStore(),
         clientFactory: (_) => api,
       );
-      final player = PlayerViewModel(audioEngine: audio);
-      player.attachSession(session);
+      final player = PlayerViewModel(audioEngine: audio)
+        ..attachSession(session);
 
-      final library = LibraryViewModel();
-      library.attach(session: session, player: player);
+      final library = LibraryViewModel()
+        ..attach(session: session, player: player);
 
       await session.signIn(
         serverUrl: 'https://demo.navidrome.org',
@@ -158,6 +158,45 @@ void main() {
 
       expect(player.track?.id, 'song-p');
       expect(audio.source?.queryParameters['id'], 'song-p');
+    },
+  );
+
+  test(
+    'authenticated dashboard seeds player queue without duplicate random '
+    'fetches',
+    () async {
+      const featured = SubsonicSong(
+        id: 'seed-song',
+        title: 'Seed Track',
+        artist: 'Seeder',
+        duration: Duration(minutes: 3),
+      );
+
+      final api = FakeSubsonicApi(
+        randomSongs: const [featured],
+      );
+      final audio = FakePlayerAudioEngine();
+      final session = AppSession(
+        profileStore: InMemoryServerProfileStore(),
+        clientFactory: (_) => api,
+      );
+      final player = PlayerViewModel(audioEngine: audio)
+        ..attachSession(session);
+
+      final library = LibraryViewModel();
+      addTearDown(library.dispose);
+      library.attach(session: session, player: player);
+
+      await session.signIn(
+        serverUrl: 'https://demo.navidrome.org',
+        username: 'demo',
+        password: 'demo',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(api.randomSongsCount, 1);
+      expect(player.track?.id, 'seed-song');
+      expect(audio.source?.queryParameters['id'], 'seed-song');
     },
   );
 }

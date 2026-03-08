@@ -7,9 +7,21 @@ import 'package:flutter_sonicwave/features/player/data/player_audio_engine.dart'
 import 'package:flutter_sonicwave/features/player/domain/player_track.dart';
 import 'package:flutter_sonicwave/features/subsonic/data/subsonic_client.dart';
 
-enum PlayerRepeatMode { off, all, one }
+/// Repeat modes supported by the player queue.
+enum PlayerRepeatMode {
+  /// Stop at the end of the queue.
+  off,
 
+  /// Loop the whole queue.
+  all,
+
+  /// Repeat the current track.
+  one,
+}
+
+/// Owns playback state, queue management, and track actions.
 class PlayerViewModel extends ChangeNotifier {
+  /// Creates a player view model.
   PlayerViewModel({PlayerAudioEngine? audioEngine, Random? random})
     : _audioEngine = audioEngine ?? JustAudioPlayerAudioEngine(),
       _random = random ?? Random() {
@@ -27,40 +39,64 @@ class PlayerViewModel extends ChangeNotifier {
   AppSession? _session;
 
   List<PlayerTrack> _queue = const [];
+
+  /// Current playback queue.
   List<PlayerTrack> get queue => _queue;
 
   int _currentIndex = -1;
+
+  /// Index of the active queue item.
   int get currentIndex => _currentIndex;
 
   PlayerTrack? _track;
+
+  /// Currently selected track, if any.
   PlayerTrack? get track => _track;
 
   bool _loadingTrack = false;
+
+  /// Whether a server-backed track load is in progress.
   bool get loadingTrack => _loadingTrack;
 
   bool _isPlaying = false;
+
+  /// Whether audio is currently playing.
   bool get isPlaying => _isPlaying;
 
   bool _shuffleEnabled = false;
+
+  /// Whether shuffle is enabled.
   bool get shuffleEnabled => _shuffleEnabled;
 
   PlayerRepeatMode _repeatMode = PlayerRepeatMode.off;
+
+  /// Current repeat mode.
   PlayerRepeatMode get repeatMode => _repeatMode;
 
   Duration _position = Duration.zero;
+
+  /// Current playback position.
   Duration get position => _position;
 
   int _secondaryTab = 1;
+
+  /// Selected tab index for the secondary player section.
   int get secondaryTab => _secondaryTab;
 
   String? _errorMessage;
+
+  /// Last user-visible playback error.
   String? get errorMessage => _errorMessage;
 
   bool _scrobbledForCurrent = false;
 
+  /// Whether the current track is starred.
   bool get isFavorite => _track?.isFavorite ?? false;
+
+  /// Current user rating for the active track.
   int get rating => _track?.rating ?? 0;
 
+  /// Current playback progress in the 0..1 range.
   double get progress {
     final total = _track?.duration.inMilliseconds ?? 0;
     if (total <= 0) {
@@ -70,6 +106,7 @@ class PlayerViewModel extends ChangeNotifier {
     return bounded / total;
   }
 
+  /// Attaches the authenticated session dependency.
   void attachSession(AppSession session) {
     if (identical(_session, session)) {
       return;
@@ -80,6 +117,7 @@ class PlayerViewModel extends ChangeNotifier {
     _handleSessionChange();
   }
 
+  /// Loads a featured track set from the server.
   Future<void> loadFeaturedTrack() async {
     final client = _session?.client;
     if (client == null) {
@@ -95,7 +133,7 @@ class PlayerViewModel extends ChangeNotifier {
       if (songs.isEmpty) {
         await _setQueue(const [_fallbackTrack], startIndex: 0, autoPlay: false);
       } else {
-        await setQueueFromSubsonicSongs(songs, startIndex: 0, autoPlay: false);
+        await setQueueFromSubsonicSongs(songs);
       }
     } on Object catch (error) {
       _errorMessage = 'Could not load track from server: $error';
@@ -106,6 +144,7 @@ class PlayerViewModel extends ChangeNotifier {
     }
   }
 
+  /// Replaces the queue with tracks mapped from Subsonic songs.
   Future<void> setQueueFromSubsonicSongs(
     List<SubsonicSong> songs, {
     int startIndex = 0,
@@ -130,6 +169,7 @@ class PlayerViewModel extends ChangeNotifier {
     await _setQueue(tracks, startIndex: startIndex, autoPlay: autoPlay);
   }
 
+  /// Toggles playback for the active track.
   Future<void> togglePlayback() async {
     if (_track == null) {
       return;
@@ -147,6 +187,7 @@ class PlayerViewModel extends ChangeNotifier {
     }
   }
 
+  /// Skips to the next track according to repeat and shuffle mode.
   Future<void> skipNext() async {
     final nextIndex = _resolveNextIndex();
     if (nextIndex == null) {
@@ -156,6 +197,7 @@ class PlayerViewModel extends ChangeNotifier {
     await _playAt(nextIndex, autoPlay: true, seekToStart: true);
   }
 
+  /// Goes to the previous track or restarts the current one.
   Future<void> skipPrevious() async {
     if (_track == null) {
       return;
@@ -175,11 +217,21 @@ class PlayerViewModel extends ChangeNotifier {
     await _playAt(previousIndex, autoPlay: true, seekToStart: true);
   }
 
+  /// Toggles shuffle mode.
   void toggleShuffle() {
-    _shuffleEnabled = !_shuffleEnabled;
+    setShuffleEnabled(enabled: !_shuffleEnabled);
+  }
+
+  /// Applies the supplied shuffle state.
+  void setShuffleEnabled({required bool enabled}) {
+    if (_shuffleEnabled == enabled) {
+      return;
+    }
+    _shuffleEnabled = enabled;
     notifyListeners();
   }
 
+  /// Cycles through repeat modes.
   void cycleRepeatMode() {
     switch (_repeatMode) {
       case PlayerRepeatMode.off:
@@ -192,17 +244,47 @@ class PlayerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Applies an explicit repeat mode.
+  void setRepeatMode(PlayerRepeatMode mode) {
+    if (_repeatMode == mode) {
+      return;
+    }
+    _repeatMode = mode;
+    notifyListeners();
+  }
+
+  /// Seeks to a fractional position within the current track.
   void seekToFraction(double value) {
     final trackDurationMs = _track?.duration.inMilliseconds ?? 0;
     if (trackDurationMs <= 0) {
       return;
     }
     final clamped = value.clamp(0.0, 1.0);
-    _position = Duration(milliseconds: (trackDurationMs * clamped).round());
-    notifyListeners();
-    unawaited(_audioEngine.seek(_position));
+    unawaited(
+      seekToPosition(
+        Duration(milliseconds: (trackDurationMs * clamped).round()),
+      ),
+    );
   }
 
+  /// Seeks to an absolute position within the current track.
+  Future<void> seekToPosition(Duration position) async {
+    final duration = _track?.duration ?? Duration.zero;
+    if (duration <= Duration.zero) {
+      return;
+    }
+
+    final bounded = position > duration
+        ? duration
+        : position < Duration.zero
+        ? Duration.zero
+        : position;
+    _position = bounded;
+    notifyListeners();
+    await _audioEngine.seek(bounded);
+  }
+
+  /// Updates the selected secondary player tab.
   void selectSecondaryTab(int index) {
     if (_secondaryTab == index) {
       return;
@@ -211,6 +293,7 @@ class PlayerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Toggles the starred state for the active track.
   Future<void> toggleFavorite() async {
     final client = _session?.client;
     final current = _track;
@@ -232,10 +315,12 @@ class PlayerViewModel extends ChangeNotifier {
     }
   }
 
+  /// Applies the lowest supported rating to the active track.
   Future<void> markDisliked() {
     return setRating(1);
   }
 
+  /// Updates the rating for the active track.
   Future<void> setRating(int value) async {
     final client = _session?.client;
     final current = _track;
@@ -312,7 +397,7 @@ class PlayerViewModel extends ChangeNotifier {
     }
 
     if (_shuffleEnabled && _queue.length > 1) {
-      int candidate = _currentIndex;
+      var candidate = _currentIndex;
       while (candidate == _currentIndex) {
         candidate = _random.nextInt(_queue.length);
       }
@@ -337,7 +422,7 @@ class PlayerViewModel extends ChangeNotifier {
     }
 
     if (_shuffleEnabled && _queue.length > 1) {
-      int candidate = _currentIndex;
+      var candidate = _currentIndex;
       while (candidate == _currentIndex) {
         candidate = _random.nextInt(_queue.length);
       }
@@ -374,7 +459,7 @@ class PlayerViewModel extends ChangeNotifier {
     if (duration == null || _track == null) {
       return;
     }
-    _applyTrackUpdate(_track!.copyWith(duration: duration), notify: true);
+    _applyTrackUpdate(_track!.copyWith(duration: duration));
   }
 
   void _handlePlayingUpdate(bool isPlaying) {
@@ -387,7 +472,6 @@ class PlayerViewModel extends ChangeNotifier {
 
   void _handleSessionChange() {
     if (_session?.status == AppSessionStatus.authenticated) {
-      unawaited(loadFeaturedTrack());
       return;
     }
 
@@ -446,7 +530,7 @@ class PlayerViewModel extends ChangeNotifier {
       duration: song.duration,
       coverArtUrl: song.coverArt == null
           ? null
-          : client.getCoverArtUri(song.coverArt!, size: 900),
+          : client.getCoverArtUri(song.coverArt!, size: 320),
       streamUrl: client.getStreamUri(song.id),
       isFavorite: song.isStarred,
       rating: song.rating,
@@ -456,7 +540,7 @@ class PlayerViewModel extends ChangeNotifier {
   static const PlayerTrack _fallbackTrack = PlayerTrack(
     id: 'fallback-track',
     title: 'No track loaded',
-    artist: 'SonicWave',
+    artist: 'Aurio',
     duration: Duration(minutes: 3),
   );
 

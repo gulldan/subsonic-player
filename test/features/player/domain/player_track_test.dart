@@ -8,8 +8,6 @@ void main() {
       title: 'Title',
       artist: 'Artist',
       duration: Duration(minutes: 3),
-      coverArtUrl: null,
-      streamUrl: null,
     );
 
     final changed = track.copyWith(title: 'New Title');

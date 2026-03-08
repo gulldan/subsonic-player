@@ -3,9 +3,21 @@ import 'package:flutter_sonicwave/features/auth/data/server_profile_store.dart';
 import 'package:flutter_sonicwave/features/auth/domain/server_profile.dart';
 import 'package:flutter_sonicwave/features/subsonic/data/subsonic_client.dart';
 
-enum AppSessionStatus { bootstrapping, unauthenticated, authenticated }
+/// Lifecycle states for the authenticated application session.
+enum AppSessionStatus {
+  /// Session restoration or sign-in is in progress.
+  bootstrapping,
 
+  /// No active authenticated session exists.
+  unauthenticated,
+
+  /// The user is signed in and a client is ready.
+  authenticated,
+}
+
+/// Owns authentication state and the currently active Subsonic client.
 class AppSession extends ChangeNotifier {
+  /// Creates a session coordinator.
   AppSession({
     required ServerProfileStore profileStore,
     required SubsonicClientFactory clientFactory,
@@ -16,46 +28,76 @@ class AppSession extends ChangeNotifier {
   final SubsonicClientFactory _clientFactory;
 
   AppSessionStatus _status = AppSessionStatus.bootstrapping;
+
+  /// Current lifecycle status of the session.
   AppSessionStatus get status => _status;
 
   ServerProfile? _profile;
+
+  /// Authenticated server profile, if available.
   ServerProfile? get profile => _profile;
 
   SubsonicApi? _client;
+
+  /// Active API client for authenticated requests, if available.
   SubsonicApi? get client => _client;
 
   String? _errorMessage;
+
+  /// Last user-visible connection or restore error.
   String? get errorMessage => _errorMessage;
 
+  /// Whether the session is currently restoring or authenticating.
   bool get isBusy => _status == AppSessionStatus.bootstrapping;
 
+  /// Restores a persisted session, if one is available.
   Future<void> bootstrap() async {
     _status = AppSessionStatus.bootstrapping;
     _errorMessage = null;
     notifyListeners();
 
-    final profile = await _profileStore.read();
-    if (profile == null) {
-      _setSignedOut();
-      return;
-    }
+    try {
+      final profile = await _profileStore.read();
+      if (profile == null) {
+        _setSignedOut();
+        return;
+      }
 
-    await _authenticate(profile, persistProfile: false);
+      await _authenticate(profile, persistProfile: false);
+    } on Object catch (error) {
+      _closeClient();
+      _status = AppSessionStatus.unauthenticated;
+      _profile = null;
+      _client = null;
+      _errorMessage =
+          'Saved session could not be restored. Technical details: $error';
+      notifyListeners();
+    }
   }
 
+  /// Attempts to sign in with the provided server credentials.
   Future<bool> signIn({
     required String serverUrl,
     required String username,
     required String password,
+    bool rememberMe = true,
   }) async {
     final candidateProfile = ServerProfile(
       baseUrl: serverUrl,
       username: username,
       password: password,
     );
-    return _authenticate(candidateProfile, persistProfile: true);
+    final authenticated = await _authenticate(
+      candidateProfile,
+      persistProfile: rememberMe,
+    );
+    if (authenticated && !rememberMe) {
+      await _profileStore.clear();
+    }
+    return authenticated;
   }
 
+  /// Signs out and clears any persisted server profile.
   Future<void> signOut() async {
     await _profileStore.clear();
     _closeClient();

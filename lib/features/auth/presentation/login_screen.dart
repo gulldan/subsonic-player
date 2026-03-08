@@ -1,9 +1,25 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_sonicwave/app/platform_ui_scope.dart';
+import 'package:flutter_sonicwave/app/theme/app_theme.dart';
+import 'package:flutter_sonicwave/core/ui/widgets/app_atmosphere.dart';
+import 'package:flutter_sonicwave/core/ui/widgets/app_brand_mark.dart';
+import 'package:flutter_sonicwave/core/ui/widgets/app_panel.dart';
+import 'package:flutter_sonicwave/core/ui/widgets/app_status_banner.dart';
 import 'package:flutter_sonicwave/features/auth/presentation/app_session.dart';
-import 'package:provider/provider.dart';
+import 'package:macos_ui/macos_ui.dart';
 
+part 'login_screen_macos.dart';
+part 'login_screen_material.dart';
+part 'login_screen_shared.dart';
+
+/// Sign-in screen for connecting to a Subsonic-compatible server.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  /// Creates the login screen.
+  const LoginScreen({required this.session, super.key});
+
+  /// Shared application session used for authentication.
+  final AppSession session;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -15,18 +31,20 @@ class _LoginScreenState extends State<LoginScreen> {
   late final TextEditingController _passwordController;
   final _formKey = GlobalKey<FormState>();
 
+  bool _rememberMe = true;
+  String? _inlineValidationError;
+
   @override
   void initState() {
     super.initState();
-    final session = context.read<AppSession>();
     _urlController = TextEditingController(
-      text: session.profile?.baseUrl ?? 'https://demo.navidrome.org',
+      text: widget.session.profile?.baseUrl ?? 'https://demo.navidrome.org',
     );
     _usernameController = TextEditingController(
-      text: session.profile?.username ?? 'demo',
+      text: widget.session.profile?.username ?? 'demo',
     );
     _passwordController = TextEditingController(
-      text: session.profile?.password ?? 'demo',
+      text: widget.session.profile?.password ?? 'demo',
     );
   }
 
@@ -39,147 +57,86 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) {
+    if (PlatformUiScope.useMacos(context)) {
+      final error = _validateFields();
+      if (error != null) {
+        setState(() {
+          _inlineValidationError = error;
+        });
+        return;
+      }
+      if (_inlineValidationError != null) {
+        setState(() {
+          _inlineValidationError = null;
+        });
+      }
+    } else if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    final session = context.read<AppSession>();
-    await session.signIn(
+    await widget.session.signIn(
       serverUrl: _urlController.text,
       username: _usernameController.text,
       password: _passwordController.text,
+      rememberMe: _rememberMe,
     );
+  }
+
+  String? _validateFields() {
+    if (_urlController.text.trim().isEmpty) {
+      return 'Server URL is required';
+    }
+    if (!_urlController.text.contains('://')) {
+      return 'Use full URL with protocol, for example https://...';
+    }
+    if (_usernameController.text.trim().isEmpty) {
+      return 'Username is required';
+    }
+    if (_passwordController.text.trim().isEmpty) {
+      return 'Password is required';
+    }
+    return null;
+  }
+
+  void _setRememberMe(bool value) {
+    setState(() {
+      _rememberMe = value;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final session = context.watch<AppSession>();
-    final isBusy = session.isBusy;
+    final useMacosUi = PlatformUiScope.useMacos(context);
 
-    return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF133553), Color(0xFF0E2539)],
-          ),
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(28),
-              child: Card(
-                color: const Color(0xFF1B3E5F),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'SonicWave',
-                          style: theme.textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Log in to your Subsonic server',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 28),
-                        TextFormField(
-                          controller: _urlController,
-                          keyboardType: TextInputType.url,
-                          decoration: const InputDecoration(
-                            labelText: 'Server URL',
-                            hintText: 'https://your-subsonic-server.com',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Server URL is required';
-                            }
-                            if (!value.contains('://')) {
-                              return 'Use full URL with protocol, for example https://...';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _usernameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Username',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Username is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Password is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        if (session.errorMessage != null) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            session.errorMessage!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: isBusy ? null : _submit,
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              backgroundColor: const Color(0xFF2F5A86),
-                            ),
-                            child: isBusy
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text('Connect and open player'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: widget.session,
+      builder: (context, child) {
+        final isBusy = widget.session.isBusy;
+        if (useMacosUi) {
+          return _MacosLoginLayout(
+            urlController: _urlController,
+            usernameController: _usernameController,
+            passwordController: _passwordController,
+            rememberMe: _rememberMe,
+            isBusy: isBusy,
+            errorMessage: _inlineValidationError ?? widget.session.errorMessage,
+            onRememberChanged: _setRememberMe,
+            onSubmit: _submit,
+          );
+        }
+
+        return _MaterialLoginLayout(
+          formKey: _formKey,
+          urlController: _urlController,
+          usernameController: _usernameController,
+          passwordController: _passwordController,
+          rememberMe: _rememberMe,
+          isBusy: isBusy,
+          errorMessage: widget.session.errorMessage,
+          onRememberChanged: _setRememberMe,
+          onSubmit: _submit,
+        );
+      },
     );
   }
 }

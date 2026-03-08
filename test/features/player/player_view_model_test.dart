@@ -8,7 +8,6 @@ import '../../support/fakes.dart';
 void main() {
   test('loadFeaturedTrack uses Subsonic random song', () async {
     final api = FakeSubsonicApi(
-      pingResult: true,
       randomSongs: const [
         SubsonicSong(
           id: '42',
@@ -24,8 +23,7 @@ void main() {
       clientFactory: (_) => api,
     );
     final audio = FakePlayerAudioEngine();
-    final vm = PlayerViewModel(audioEngine: audio);
-    vm.attachSession(session);
+    final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
 
     await session.signIn(
       serverUrl: 'https://demo.navidrome.org',
@@ -42,7 +40,6 @@ void main() {
 
   test('togglePlayback toggles state only when track exists', () async {
     final api = FakeSubsonicApi(
-      pingResult: true,
       randomSongs: const [
         SubsonicSong(
           id: '10',
@@ -57,8 +54,7 @@ void main() {
       clientFactory: (_) => api,
     );
     final audio = FakePlayerAudioEngine();
-    final vm = PlayerViewModel(audioEngine: audio);
-    vm.attachSession(session);
+    final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
 
     await vm.togglePlayback();
     expect(vm.isPlaying, isFalse);
@@ -78,7 +74,6 @@ void main() {
 
   test('seekToFraction clamps values and updates progress', () async {
     final api = FakeSubsonicApi(
-      pingResult: true,
       randomSongs: const [
         SubsonicSong(
           id: '12',
@@ -93,8 +88,7 @@ void main() {
       clientFactory: (_) => api,
     );
     final audio = FakePlayerAudioEngine();
-    final vm = PlayerViewModel(audioEngine: audio);
-    vm.attachSession(session);
+    final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
 
     await session.signIn(
       serverUrl: 'https://demo.navidrome.org',
@@ -107,9 +101,45 @@ void main() {
     expect(vm.progress, 1);
     expect(audio.lastSeekPosition, const Duration(minutes: 4));
 
-    vm.seekToFraction(-1.0);
+    vm.seekToFraction(-1);
     expect(vm.progress, 0);
     expect(audio.lastSeekPosition, Duration.zero);
+  });
+
+  test('seekToPosition, shuffle, and repeat can be set explicitly', () async {
+    final api = FakeSubsonicApi(
+      randomSongs: const [
+        SubsonicSong(
+          id: '12',
+          title: 'Track',
+          artist: 'Artist',
+          duration: Duration(minutes: 4),
+        ),
+      ],
+    );
+    final session = AppSession(
+      profileStore: InMemoryServerProfileStore(),
+      clientFactory: (_) => api,
+    );
+    final audio = FakePlayerAudioEngine();
+    final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
+
+    await session.signIn(
+      serverUrl: 'https://demo.navidrome.org',
+      username: 'demo',
+      password: 'demo',
+    );
+    await vm.loadFeaturedTrack();
+
+    await vm.seekToPosition(const Duration(minutes: 9));
+    expect(vm.progress, 1);
+    expect(audio.lastSeekPosition, const Duration(minutes: 4));
+
+    vm.setShuffleEnabled(enabled: true);
+    expect(vm.shuffleEnabled, isTrue);
+
+    vm.setRepeatMode(PlayerRepeatMode.one);
+    expect(vm.repeatMode, PlayerRepeatMode.one);
   });
 
   test('selectSecondaryTab updates current tab index', () {
@@ -144,15 +174,14 @@ void main() {
       profileStore: InMemoryServerProfileStore(),
       clientFactory: (_) => api,
     );
-    final vm = PlayerViewModel(audioEngine: audio);
-    vm.attachSession(session);
+    final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
 
     await session.signIn(
       serverUrl: 'https://demo.navidrome.org',
       username: 'demo',
       password: 'demo',
     );
-    await vm.setQueueFromSubsonicSongs(api.randomSongs, startIndex: 0);
+    await vm.setQueueFromSubsonicSongs(api.randomSongs);
 
     expect(vm.track?.id, 'a');
 
@@ -188,15 +217,14 @@ void main() {
         profileStore: InMemoryServerProfileStore(),
         clientFactory: (_) => api,
       );
-      final vm = PlayerViewModel(audioEngine: audio);
-      vm.attachSession(session);
+      final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
 
       await session.signIn(
         serverUrl: 'https://demo.navidrome.org',
         username: 'demo',
         password: 'demo',
       );
-      await vm.setQueueFromSubsonicSongs(api.randomSongs, startIndex: 0);
+      await vm.setQueueFromSubsonicSongs(api.randomSongs);
 
       expect(vm.isFavorite, isFalse);
 
@@ -236,15 +264,14 @@ void main() {
       profileStore: InMemoryServerProfileStore(),
       clientFactory: (_) => api,
     );
-    final vm = PlayerViewModel(audioEngine: audio);
-    vm.attachSession(session);
+    final vm = PlayerViewModel(audioEngine: audio)..attachSession(session);
 
     await session.signIn(
       serverUrl: 'https://demo.navidrome.org',
       username: 'demo',
       password: 'demo',
     );
-    await vm.setQueueFromSubsonicSongs(api.randomSongs, startIndex: 0);
+    await vm.setQueueFromSubsonicSongs(api.randomSongs);
 
     audio.emitPosition(const Duration(minutes: 2, seconds: 1));
     await Future<void>.delayed(Duration.zero);

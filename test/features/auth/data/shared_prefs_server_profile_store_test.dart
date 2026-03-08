@@ -33,6 +33,19 @@ void main() {
     expect(loaded, isNull);
   });
 
+  test('read clears corrupted payload instead of throwing', () async {
+    SharedPreferences.setMockInitialValues({
+      'subsonic_server_profile': '{invalid-json',
+    });
+    final store = SharedPrefsServerProfileStore();
+
+    final loaded = await store.read();
+    final prefs = await SharedPreferences.getInstance();
+
+    expect(loaded, isNull);
+    expect(prefs.containsKey('subsonic_server_profile'), isFalse);
+  });
+
   test('clear removes saved profile', () async {
     final store = SharedPrefsServerProfileStore();
     const profile = ServerProfile(

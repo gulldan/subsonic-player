@@ -82,6 +82,33 @@ void main() {
     expect(result, isFalse);
   });
 
+  test('call throws readable timeout error', () async {
+    final client = SubsonicClient(
+      profile,
+      requestTimeout: const Duration(milliseconds: 1),
+      httpClient: MockClient((request) async {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        return http.Response(
+          jsonEncode({
+            'subsonic-response': {'status': 'ok'},
+          }),
+          200,
+        );
+      }),
+    );
+
+    await expectLater(
+      client.call('ping'),
+      throwsA(
+        isA<SubsonicApiException>().having(
+          (e) => e.message,
+          'message',
+          contains('Request timed out'),
+        ),
+      ),
+    );
+  });
+
   test('getRandomSongs parses list and single object payloads', () async {
     final payloads = <Map<String, dynamic>>[
       {
@@ -212,7 +239,7 @@ void main() {
       }),
     );
 
-    final albums = await client.getAlbumList2(type: 'newest', size: 1);
+    final albums = await client.getAlbumList2(size: 1);
     final playlists = await client.getPlaylists();
 
     expect(albums, hasLength(1));
@@ -319,7 +346,7 @@ void main() {
       await client.star('song-1');
       await client.unstar('song-1');
       await client.setRating(songId: 'song-1', rating: 5);
-      await client.scrobble('song-1', submission: true, time: 1234);
+      await client.scrobble('song-1', time: 1234);
 
       expect(urls[0].path, '/rest/star.view');
       expect(urls[1].path, '/rest/unstar.view');

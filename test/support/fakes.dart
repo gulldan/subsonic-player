@@ -45,9 +45,15 @@ class FakeSubsonicApi implements SubsonicApi {
   Map<String, List<SubsonicSong>> albumSongsById;
   List<SubsonicSong> searchSongsResults;
   Map<String, dynamic> callResponse;
-  Object? callError;
+  Exception? callError;
   int callCount = 0;
   int pingCount = 0;
+  int randomSongsCount = 0;
+  int albumsCount = 0;
+  int playlistsCount = 0;
+  int playlistSongsCount = 0;
+  int albumSongsCount = 0;
+  int searchSongsCount = 0;
   int starCount = 0;
   int unstarCount = 0;
   int ratingCount = 0;
@@ -90,6 +96,7 @@ class FakeSubsonicApi implements SubsonicApi {
 
   @override
   Future<List<SubsonicSong>> getRandomSongs({int size = 1}) async {
+    randomSongsCount += 1;
     return randomSongs;
   }
 
@@ -100,26 +107,31 @@ class FakeSubsonicApi implements SubsonicApi {
     int offset = 0,
     String? musicFolderId,
   }) async {
+    albumsCount += 1;
     return albums;
   }
 
   @override
   Future<List<SubsonicPlaylist>> getPlaylists({String? username}) async {
+    playlistsCount += 1;
     return playlists;
   }
 
   @override
   Future<List<SubsonicSong>> getPlaylistSongs(String playlistId) async {
+    playlistSongsCount += 1;
     return playlistSongsById[playlistId] ?? const [];
   }
 
   @override
   Future<List<SubsonicSong>> getAlbumSongs(String albumId) async {
+    albumSongsCount += 1;
     return albumSongsById[albumId] ?? const [];
   }
 
   @override
   Future<List<SubsonicSong>> searchSongs(String query, {int count = 60}) async {
+    searchSongsCount += 1;
     return searchSongsResults;
   }
 
@@ -239,8 +251,8 @@ class FakePlayerAudioEngine implements PlayerAudioEngine {
     _positionController.add(position);
   }
 
-  void emitPlaying(bool playing) {
-    isPlaying = playing;
-    _playingController.add(playing);
+  void emitPlaying({required bool isPlaying}) {
+    this.isPlaying = isPlaying;
+    _playingController.add(isPlaying);
   }
 }
