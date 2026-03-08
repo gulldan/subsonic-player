@@ -39,18 +39,6 @@ migrate_working_dir/
 /output/
 /third_party/
 
-# Local vendored dependency patches
-/vendor/**/.dart_tool/
-/vendor/**/.flutter-plugins-dependencies
-/vendor/**/example/
-/vendor/**/test/
-/vendor/**/pubspec.lock
-/vendor/**/analysis_options.yaml
-/vendor/**/README*
-/vendor/**/CHANGELOG*
-/vendor/**/CONTRIBUTING*
-/vendor/**/*.iml
-
 # Symbolication related
 app.*.symbols
 

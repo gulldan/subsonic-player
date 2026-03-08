@@ -48,12 +48,6 @@ dev_dependencies:
   mocktail: ^1.0.4
   very_good_analysis: ^10.2.0
 
-dependency_overrides:
-  audio_session:
-    path: vendor/packages/audio_session
-  macos_window_utils:
-    path: vendor/packages/macos_window_utils
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

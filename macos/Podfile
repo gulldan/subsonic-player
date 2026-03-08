@@ -44,5 +44,19 @@ post_install do |installer|
 
       config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.15'
     end
+
+    next unless ['audio_session', 'macos_window_utils'].include?(target.name)
+
+    target.build_configurations.each do |config|
+      if target.name == 'audio_session'
+        warning_cflags = Array(config.build_settings['WARNING_CFLAGS'])
+        config.build_settings['WARNING_CFLAGS'] =
+          (warning_cflags + ['-Wno-unused-value']).uniq
+      end
+
+      if target.name == 'macos_window_utils'
+        config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+      end
+    end
   end
 end

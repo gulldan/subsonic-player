@@ -18,11 +18,12 @@ packages:
     source: hosted
     version: "2.13.0"
   audio_session:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "vendor/packages/audio_session"
-      relative: true
-    source: path
+      name: audio_session
+      sha256: "8f96a7fecbb718cb093070f868b4cdcb8a9b1053dce342ff8ab2fde10eb9afb7"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.2.2"
   boolean_selector:
     dependency: transitive
@@ -277,11 +278,12 @@ packages:
     source: hosted
     version: "2.2.2"
   macos_window_utils:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "vendor/packages/macos_window_utils"
-      relative: true
-    source: path
+      name: macos_window_utils
+      sha256: cb918e1ff0b31fdaa5cd8631eded7c24bd72e1025cf1f95c819e483f0057c652
+      url: "https://pub.dev"
+    source: hosted
     version: "1.9.1"
   matcher:
     dependency: transitive
