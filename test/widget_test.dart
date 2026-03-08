@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sonicwave/app/app.dart';
 import 'package:flutter_sonicwave/features/auth/domain/server_profile.dart';
@@ -33,6 +34,36 @@ void main() {
     expect(find.text('Log in to your Subsonic server'), findsOneWidget);
     expect(find.text('Connect and open player'), findsOneWidget);
     expect(find.text('Server URL'), findsOneWidget);
+  });
+
+  testWidgets('keeps material shell by default on macos platform', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+
+    final store = InMemoryServerProfileStore();
+    final fakeApi = FakeSubsonicApi();
+    final session = AppSession(
+      profileStore: store,
+      clientFactory: (_) => fakeApi,
+    );
+    await session.bootstrap();
+    final playerViewModel = PlayerViewModel(
+      audioEngine: FakePlayerAudioEngine(),
+    );
+
+    await tester.pumpWidget(
+      SonicWaveApp(
+        session: session,
+        playerViewModel: playerViewModel,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MacosScaffold), findsNothing);
+    expect(find.byType(MaterialApp), findsOneWidget);
+
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('shows bootstrap screen before restoring persisted session', (
