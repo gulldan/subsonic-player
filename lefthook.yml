@@ -1,5 +1,0 @@
-pre-commit:
-  jobs:
-    - name: biome
-      glob: "*.{ts,tsx,js,jsx,json}"
-      run: bun run biome:fix
